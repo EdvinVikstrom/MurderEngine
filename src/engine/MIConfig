@@ -1,0 +1,7 @@
+sources += [
+  "$(DIR)/MurderEngine.cpp"
+  "$(DIR)/Logger.cpp"
+  "$(DIR)/Common.cpp"
+]
+
+source: "$(DIR)/renderer/MIConfig" "$(DIR)/surface/MIConfig" "$(DIR)/memory/MIConfig" "$(DIR)/scene/MIConfig"

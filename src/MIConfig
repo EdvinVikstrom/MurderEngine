@@ -1,0 +1,3 @@
+sources += [ "$(DIR)/Main.cpp" ]
+
+source: "$(DIR)/engine/MIConfig"

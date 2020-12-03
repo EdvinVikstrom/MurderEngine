@@ -1,0 +1,48 @@
+project: {
+  name "MurderEngine"
+  version "2020"
+}
+
+configure: {
+  kind EXECUTABLE
+  lang CXX
+  std STD17
+  cc GNU
+  optimization O0
+}
+
+EXTPATH = "$(DIR)/extern"
+sources = [ ]
+
+source: "$(DIR)/src/MIConfig"
+
+library: [
+  { lib "me" } 
+  { lib "pthread" }
+  { lib "vulkan" }
+  { lib "VkLayer_khronos_validation" }
+  { lib "glfw3" pkg { static true flags [ "--libs" ] name "glfw3" } }
+]
+
+include: [
+  { include "lme/type.hpp" }
+  { pkg { flags [ "--cflags" ] name "glfw3" } }
+]
+
+library_path: [
+  "$(DIR)/extern/libme"
+  "$(DIR)/extern/glfw/src"
+]
+
+include_path: [
+  "$(DIR)/extern/libme/include"
+  "$(DIR)/extern/glfw/include"
+]
+
+define: [
+  { name "WAYLAND" }
+]
+
+files: $sources
+makefile: "$(DIR)/Makefile"
+ycm_config: "$(DIR)/.ycm_extra_conf.py"

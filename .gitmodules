@@ -1,0 +1,6 @@
+[submodule "extern/libme"]
+	path = extern/libme
+	url = https://github.com/Ficklampan/libme.git
+[submodule "extern/glfw"]
+	path = extern/glfw
+	url = https://github.com/glfw/glfw.git
