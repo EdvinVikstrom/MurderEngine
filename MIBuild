@@ -20,7 +20,6 @@ library: [
   { lib "me" } 
   { lib "pthread" }
   { lib "vulkan" }
-  { lib "VkLayer_khronos_validation" }
   { lib "glfw3" pkg { static true flags [ "--libs" ] name "glfw3" } }
 ]
 

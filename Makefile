@@ -4,11 +4,7 @@ OUTNAME = MurderEngine
 CC = g++
 
 CFLAGS = -O0 -std=c++17
-LIBS = -lme \
-	-lpthread \
-	-lvulkan \
-	-lVkLayer_khronos_validation \
-	-lglfw3
+LIBS = -lme -lpthread -lvulkan -lglfw3
 INCS = --include=lme/type.hpp
 LPATHS = -L./extern/libme -L./extern/glfw/src
 IPATHS = -I./extern/libme/include -I./extern/glfw/include
@@ -31,7 +27,7 @@ SOURCES = ./src/Main.cpp \
 	./src/engine/MurderEngine.cpp \
 	./src/engine/Logger.cpp \
 	./src/engine/Common.cpp \
-	./src/engine/renderer/vulkan/VulkanRenderer.cpp \
+	./src/engine/renderer/vulkan/Vulkan.cpp \
 	./src/engine/surface/window/Window.cpp \
 	./src/engine/scene/Scene.cpp
 

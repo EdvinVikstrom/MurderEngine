@@ -2,7 +2,7 @@
 
 #include "engine/MurderEngine.hpp"
 #include "engine/surface/window/Window.hpp"
-#include "engine/renderer/vulkan/VulkanRenderer.hpp"
+#include "engine/renderer/vulkan/Vulkan.hpp"
 
 int main(int argc, char** argv)
 {
@@ -15,7 +15,7 @@ int main(int argc, char** argv)
   engine.initialize(argc, argv);
 
   me::Surface* surface = new me::Window(&engine);
-  me::Renderer* renderer = new me::VulkanRenderer(&engine, *surface);
+  me::Renderer* renderer = new me::Vulkan(&engine, *surface);
 
   engine.load_module(surface);
   engine.load_module(renderer);
