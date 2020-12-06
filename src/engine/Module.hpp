@@ -58,8 +58,6 @@ namespace me {
     { buffer.push(data); }
     
 
-    virtual int signal() = 0;
-
     virtual int initialize() = 0;
     virtual int terminate() = 0;
 

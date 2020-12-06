@@ -3,6 +3,8 @@
 
 #include "../Module.hpp"
 
+#include <vulkan/vulkan.h>
+
 #include <vector>
 #include <string>
 
@@ -23,6 +25,10 @@ namespace me {
 
     const std::vector<const char*>& get_extensions() const
     { return extensions; }
+
+    virtual int get_size(uint32_t &width, uint32_t &height) const = 0;
+
+    virtual int create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const = 0;
 
   };
 

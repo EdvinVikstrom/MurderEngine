@@ -5,9 +5,10 @@
 #include "../../surface/Surface.hpp"
 #include "../../memory/MemoryPool.hpp"
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 #include <set>
+#include <vulkan/vulkan_core.h>
 
 namespace me {
 
@@ -28,23 +29,41 @@ namespace me {
       QueueFamilyIndices queue_family_indices;
     };
 
+    struct SurfaceInfo {
+      VkSurfaceCapabilitiesKHR capabilities;
+      std::vector<VkSurfaceFormatKHR> formats;
+      std::vector<VkPresentModeKHR> present_modes;
+
+      VkSurfaceFormatKHR format;
+      VkPresentModeKHR present_mode;
+
+      VkExtent2D extent;
+    };
+
+    struct SwapchainInfo {
+      VkSwapchainKHR swapchain;
+      std::vector<VkImage> images;
+      std::vector<VkImageView> image_views;
+    };
+
   protected:
 
     Logger* logger;
 
-    const Surface &surface;
+    const Surface &surface_instance;
     std::vector<const char*> extensions;
 
     VkInstance instance;
+    VkSurfaceKHR surface;
     PhysicalDeviceInfo physical_device_info = { VK_NULL_HANDLE };
     VkDevice device;
     VkCommandPool command_pool;
+    SurfaceInfo surface_info;
+    SwapchainInfo swapchain_info;
 
   public:
 
-    explicit Vulkan(const MurderEngine* engine, const Surface &surface);
-
-    int signal() override { return 0; }
+    explicit Vulkan(const MurderEngine* engine, const Surface &surface_instance);
 
     int initialize() override;
     int terminate() override;
@@ -64,10 +83,16 @@ namespace me {
 	const std::vector<const char*> &required_extensions, const std::vector<const char*> &required_features, PhysicalDeviceInfo &physical_device_info);
 
     /* logical device */
-    int create_device(const PhysicalDeviceInfo &physical_device_info, VkDevice &device);
+    int create_device(VkDevice &device);
 
     /* command pool */
-    int create_command_pool(const PhysicalDeviceInfo &physical_device_info, const VkDevice device, VkCommandPool &command_pool);
+    int create_command_pool(VkCommandPool &command_pool);
+
+    /* swapchain */
+    int get_surface_format(const std::vector<VkSurfaceFormatKHR> &formats, VkSurfaceFormatKHR &format);
+    int get_present_mode(const std::vector<VkPresentModeKHR> &modes, VkPresentModeKHR &mode);
+    int get_extent(const Surface &surface_instance, const VkSurfaceCapabilitiesKHR surface_capabilities, VkExtent2D &extent);
+    int create_swapchain(SwapchainInfo &swapchain_info);
 
   };
 

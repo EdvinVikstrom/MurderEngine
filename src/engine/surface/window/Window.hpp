@@ -19,12 +19,14 @@ namespace me {
 
     Window(const MurderEngine* engine);
 
-    int signal() override;
-
     int initialize() override;
     int terminate() override;
 
     int tick() override;
+
+    int get_size(uint32_t &width, uint32_t &height) const override;
+
+    int create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const override;
 
   };
 

@@ -1,6 +1,6 @@
-#include <vulkan/vulkan.hpp>
 #include "Window.hpp"
 
+#include "../../util/vk_utils.hpp"
 #include "../../Common.hpp"
 
 me::Window::Window(const MurderEngine* engine)
@@ -8,8 +8,12 @@ me::Window::Window(const MurderEngine* engine)
 {
 }
 
-int me::Window::signal()
+int me::Window::create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const
 {
+  VkResult result = glfwCreateWindowSurface(instance, glfw_window, allocator, surface);
+  if (result != VK_SUCCESS)
+    throw Exception(logger->get_prefix(), true, "failed to create window surface [%s]", vk_utils_result_string(result));
+
   return 0;
 }
 
@@ -51,5 +55,11 @@ int me::Window::tick()
 {
   if (glfwWindowShouldClose(glfw_window))
     return 1;
+  return 0;
+}
+
+int me::Window::get_size(uint32_t &width, uint32_t &height) const
+{
+  glfwGetWindowSize(glfw_window, (int*) &width, (int*) &height);
   return 0;
 }
