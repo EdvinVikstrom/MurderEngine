@@ -1,7 +1,6 @@
 #include "MurderEngine.hpp"
 
 #include "Module.hpp"
-#include "Common.hpp"
 
 me::MurderEngine::MurderEngine(const AppConfig &app_config)
   : app_config(app_config), logger("Engine")
@@ -36,14 +35,10 @@ int me::MurderEngine::initialize_loop()
 
       try {
 	module->tick();
-      }catch (const Exception &e)
+      }catch (const exception &e)
       {
-	if (e.is_fatal())
-	{
-	  logger.fatal("%s", e.get_message());
-	  terminate();
-	}else
-	  logger.err("%s", e.get_message());
+	print_module_exception(*module, e);
+	return 1;
       }
     }
   }
@@ -64,14 +59,9 @@ int me::MurderEngine::load_module(Module* module)
 
   try {
     module->initialize();
-  }catch (const Exception &e)
+  }catch (const exception &e)
   {
-    if (e.is_fatal())
-    {
-      logger.fatal("%s", e.get_message());
-      terminate();
-    }else
-      logger.err("%s", e.get_message());
+    print_module_exception(*module, e);
     return 1;
   }
 
@@ -79,15 +69,21 @@ int me::MurderEngine::load_module(Module* module)
   return 0;
 }
 
-me::Module* me::MurderEngine::get_module(const std::string &id) const
+me::Module* me::MurderEngine::get_module(const string &id) const
 {
   for (Module* module : modules)
   {
     /* return module if name matches */
-    if (module->get_name().compare(id) == 0)
+    if (module->get_name() == id)
       return module;
   }
 
   /* module not found */
   return nullptr;
+}
+
+int me::MurderEngine::print_module_exception(const Module &module, const exception &except)
+{
+  logger.err("received error from module '%s'\n\t%s", module.get_name().c_str(), except.get_message());
+  return 0;
 }

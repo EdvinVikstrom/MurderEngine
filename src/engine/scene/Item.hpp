@@ -9,13 +9,13 @@ namespace me {
 
   private:
 
-    vec3f position, rotation, scale;
+    math::vec3f position, rotation, scale;
 
     MeshReference* mesh;
 
   public:
 
-    explicit Item(vec3f position, vec3f rotation, vec3f scale, MeshReference* mesh)
+    explicit Item(math::vec3f position, math::vec3f rotation, math::vec3f scale, MeshReference* mesh)
     {
       this->position = position;
       this->rotation = rotation;
@@ -23,13 +23,13 @@ namespace me {
       this->mesh = mesh;
     }
 
-    vec3f& get_position()
+    math::vec3f& get_position()
     { return position; }
 
-    vec3f& get_rotation()
+    math::vec3f& get_rotation()
     { return rotation; }
 
-    vec3f& get_scale()
+    math::vec3f& get_scale()
     { return scale; }
 
     MeshReference* get_mesh()

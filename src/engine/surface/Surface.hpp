@@ -5,8 +5,8 @@
 
 #include <vulkan/vulkan.h>
 
-#include <vector>
-#include <string>
+#include <lme/vector.hpp>
+#include <lme/string.hpp>
 
 namespace me {
 
@@ -14,16 +14,16 @@ namespace me {
 
   protected:
 
-    std::vector<const char*> extensions;
+    vector<const char*> extensions;
 
   public:
 
-    explicit Surface(const MurderEngine* engine, const std::string &name)
+    explicit Surface(const MurderEngine* engine, const string &name)
       : Module(engine, Module::SURFACE, name)
     {
     }
 
-    const std::vector<const char*>& get_extensions() const
+    const vector<const char*>& get_extensions() const
     { return extensions; }
 
     virtual int get_size(uint32_t &width, uint32_t &height) const = 0;

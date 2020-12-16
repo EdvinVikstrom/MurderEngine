@@ -7,8 +7,9 @@
 
 #include <vulkan/vulkan.h>
 
-#include <set>
 #include <vulkan/vulkan_core.h>
+
+#include <lme/optional.hpp>
 
 namespace me {
 
@@ -18,21 +19,21 @@ namespace me {
   protected:
 
     struct QueueFamilyIndices {
-      std::optional<uint32_t> graphics;
+      optional<uint32_t> graphics;
     };
     
     struct PhysicalDeviceInfo {
       VkPhysicalDevice device;
       VkPhysicalDeviceProperties properties;
       VkPhysicalDeviceFeatures features;
-      std::vector<VkExtensionProperties> extensions;
+      vector<VkExtensionProperties> extensions;
       QueueFamilyIndices queue_family_indices;
     };
 
     struct SurfaceInfo {
       VkSurfaceCapabilitiesKHR capabilities;
-      std::vector<VkSurfaceFormatKHR> formats;
-      std::vector<VkPresentModeKHR> present_modes;
+      vector<VkSurfaceFormatKHR> formats;
+      vector<VkPresentModeKHR> present_modes;
 
       VkSurfaceFormatKHR format;
       VkPresentModeKHR present_mode;
@@ -42,8 +43,12 @@ namespace me {
 
     struct SwapchainInfo {
       VkSwapchainKHR swapchain;
-      std::vector<VkImage> images;
-      std::vector<VkImageView> image_views;
+      vector<VkImage> images;
+      vector<VkImageView> image_views;
+    };
+
+    struct Storage {
+      vector<VkShaderModule> shaders;
     };
 
   protected:
@@ -51,7 +56,9 @@ namespace me {
     Logger* logger;
 
     const Surface &surface_instance;
-    std::vector<const char*> extensions;
+    vector<const char*> extensions;
+
+    mutable Storage storage;
 
     VkInstance instance;
     VkSurfaceKHR surface;
@@ -65,22 +72,24 @@ namespace me {
 
     explicit Vulkan(const MurderEngine* engine, const Surface &surface_instance);
 
+    int compile_shader(Shader* shader) const override;
+
+  protected:
+
     int initialize() override;
     int terminate() override;
 
     int tick() override;
 
-  protected:
-
     /* physical device */
     int get_physical_device_queue_family(const VkPhysicalDevice physical_device,
 	const int required_flags, uint32_t &family_index);
     int get_physical_device_extensions(const VkPhysicalDevice physical_device,
-	const std::vector<const char*> &required_extensions, std::vector<VkExtensionProperties> &extensions);
+	const vector<const char*> &required_extensions, vector<VkExtensionProperties> &extensions);
     int get_physical_device_features(const VkPhysicalDevice physical_device,
-	const std::vector<const char*> &required_features, VkPhysicalDeviceFeatures &features);
+	const vector<const char*> &required_features, VkPhysicalDeviceFeatures &features);
     int get_physical_device(const int required_flags,
-	const std::vector<const char*> &required_extensions, const std::vector<const char*> &required_features, PhysicalDeviceInfo &physical_device_info);
+	const vector<const char*> &required_extensions, const vector<const char*> &required_features, PhysicalDeviceInfo &physical_device_info);
 
     /* logical device */
     int create_device(VkDevice &device);
@@ -89,8 +98,8 @@ namespace me {
     int create_command_pool(VkCommandPool &command_pool);
 
     /* swapchain */
-    int get_surface_format(const std::vector<VkSurfaceFormatKHR> &formats, VkSurfaceFormatKHR &format);
-    int get_present_mode(const std::vector<VkPresentModeKHR> &modes, VkPresentModeKHR &mode);
+    int get_surface_format(const vector<VkSurfaceFormatKHR> &formats, VkSurfaceFormatKHR &format);
+    int get_present_mode(const vector<VkPresentModeKHR> &modes, VkPresentModeKHR &mode);
     int get_extent(const Surface &surface_instance, const VkSurfaceCapabilitiesKHR surface_capabilities, VkExtent2D &extent);
     int create_swapchain(SwapchainInfo &swapchain_info);
 

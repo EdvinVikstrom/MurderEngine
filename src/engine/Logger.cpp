@@ -1,17 +1,12 @@
 #include "Logger.hpp"
 
-#include <cstdio>
-#include <cstdarg>
+#include <stdarg.h>
+#include <stdio.h>
 
 /* Logger */
-me::Logger::Logger(const char* prefix, const Logger* parent)
-  : prefix(prefix), parent(parent)
+me::Logger::Logger(const char* prefix, const uint8_t tracing, const Logger* parent)
+  : prefix(prefix), tracing(tracing), parent(parent)
 {
-}
-
-const char* me::Logger::get_prefix() const
-{
-  return prefix;
 }
 
 #define LOGGER_LOG(p) { \
@@ -75,31 +70,5 @@ void me::Logger::trace_all()
 
 me::Logger* me::Logger::child(const char* name) const
 {
-  return new Logger(name, this);
-}
-
-/* Exception */
-me::Exception::Exception(const char* prefix, const bool fatal, const char* format, ...)
-  : prefix(prefix), fatal(fatal), message(new char[1024])
-{
-  va_list args;
-  va_start(args, format);
-  vsprintf(message, format, args);
-  va_end(args);
-
-}
-
-const bool me::Exception::is_fatal() const
-{
-  return fatal;
-}
-
-const char* me::Exception::get_message() const
-{
-  return message;
-}
-
-const char* me::Exception::what() const throw()
-{
-  return message;
+  return new Logger(name, tracing, this);
 }

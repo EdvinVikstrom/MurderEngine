@@ -3,8 +3,7 @@
 
 #include "MurderEngine.hpp"
 
-#include <string>
-#include <queue>
+#include <lme/string.hpp>
 
 namespace me {
 
@@ -15,7 +14,7 @@ namespace me {
   public:
 
     enum Type {
-      SURFACE, RENDERER, IO, OTHER
+      SURFACE, RENDERER, AUDIO, IO, OTHER
     };
 
   protected:
@@ -24,21 +23,11 @@ namespace me {
     bool active;
 
     const Type type;
-    const std::string name;
-
-    std::queue<void*> buffer;
-
-    /* pull data from the beginning of buffer */
-    void* pull_data()
-    {
-      void* value = buffer.front();
-      buffer.pop();
-      return value;
-    }
+    const string name;
 
   public:
 
-    Module(const MurderEngine* engine, const Type type, const std::string &name)
+    Module(const MurderEngine* engine, const Type type, const string &name)
       : engine(engine), type(type), name(name)
     {
       active = false;
@@ -47,27 +36,19 @@ namespace me {
     const Type get_type() const
     { return type; }
 
-    const std::string& get_name() const
+    const string& get_name() const
     { return name; }
 
     const bool is_active() const
     { return active; }
 
-    /* push data to the end of buffer */
-    void push_data(void* data)
-    { buffer.push(data); }
-    
-
-    virtual int initialize() = 0;
-    virtual int terminate() = 0;
-
-    virtual int tick() = 0;
 
     static inline const char* type_name(const Type type)
     {
       switch (type)
       {
 	case RENDERER: return "RENDERER";
+	case AUDIO: return "AUDIO";
 	case SURFACE: return "SURFACE";
 	case IO: return "IO";
 	case OTHER: return "OTHER";
@@ -76,6 +57,11 @@ namespace me {
     }
 
   protected:
+
+    virtual int initialize() = 0;
+    virtual int terminate() = 0;
+
+    virtual int tick() = 0;
 
     void enable()
     {

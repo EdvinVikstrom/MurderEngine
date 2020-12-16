@@ -1,7 +1,6 @@
 #include "Window.hpp"
 
 #include "../../util/vk_utils.hpp"
-#include "../../Common.hpp"
 
 me::Window::Window(const MurderEngine* engine)
   : Surface(engine, "glfw")
@@ -12,7 +11,7 @@ int me::Window::create_surface(VkInstance instance, const VkAllocationCallbacks*
 {
   VkResult result = glfwCreateWindowSurface(instance, glfw_window, allocator, surface);
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to create window surface [%s]", vk_utils_result_string(result));
+    throw exception("failed to create window surface [%s]", vk_utils_result_string(result));
 
   return 0;
 }
@@ -23,7 +22,7 @@ int me::Window::initialize()
   logger = engine->get_logger().child("GLFW");
 
   if (!glfwInit())
-    throw Exception(logger->get_prefix(), true, "failed to initialize GLFW");
+    throw exception("failed to initialize GLFW");
 
   uint32_t width = 1550, height = 770;
   const char* title = engine->get_app_config().name;
@@ -35,7 +34,7 @@ int me::Window::initialize()
   const char** extensions = glfwGetRequiredInstanceExtensions(&instance_count);
 
   if (extensions == nullptr)
-    throw Exception("GLFW", true, "failed to get GLFW required instance extensions");
+    throw exception("failed to get GLFW required instance extensions");
 
   this->extensions.reserve(instance_count);
   for (uint32_t i = 0; i < instance_count; i++)

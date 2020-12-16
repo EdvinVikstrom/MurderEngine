@@ -3,14 +3,18 @@ BUILD = build
 OUTNAME = MurderEngine
 CC = g++
 
-CFLAGS = -O0 -std=c++17
-LIBS = -lme -lpthread -lvulkan -lglfw3
+CFLAGS = -g -O0 -std=c++20
+LIBS = -lme \
+	-lpthread \
+	-lvulkan \
+	-lportaudio \
+	-lglfw3
 INCS = --include=lme/type.hpp
 LPATHS = -L./extern/libme -L./extern/glfw/src
-IPATHS = -I./extern/libme/include -I./extern/glfw/include
+IPATHS = -I./extern/libme/include -I./extern/glfw/include -I./extern/portaudio/include -I./extern/rapidxml
 DEFS = -DWAYLAND
 
-PKG_CONFIG_PATH = ./extern/libme:./extern/glfw/src:./extern/libme/include:./extern/glfw/include:
+PKG_CONFIG_PATH = ./extern/libme:./extern/glfw/src:./extern/libme/include:./extern/glfw/include:./extern/portaudio/include:./extern/rapidxml:
 CPKG = $$(env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags glfw3)
 LPKG = $$(env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --static --libs glfw3)
 
@@ -26,10 +30,11 @@ LOPTS = $(LPATHS) $(LIBS) $(LPKG)
 SOURCES = ./src/Main.cpp \
 	./src/engine/MurderEngine.cpp \
 	./src/engine/Logger.cpp \
-	./src/engine/Common.cpp \
 	./src/engine/renderer/vulkan/Vulkan.cpp \
 	./src/engine/surface/window/Window.cpp \
-	./src/engine/scene/Scene.cpp
+	./src/engine/scene/Scene.cpp \
+	./src/engine/audio/portaudio/PortAudio.cpp \
+	./src/engine/format/shader/shader_format.cpp
 
 OBJECTS = $(SOURCES:%=$(BUILD)/%.o)
 DEPENDS = $(OBJECTS:%.o=%.d)

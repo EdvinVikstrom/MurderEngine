@@ -6,7 +6,7 @@ project: {
 configure: {
   kind EXECUTABLE
   lang CXX
-  std STD17
+  std STD20
   cc GNU
   optimization O0
 }
@@ -20,6 +20,7 @@ library: [
   { lib "me" } 
   { lib "pthread" }
   { lib "vulkan" }
+  { lib "portaudio" }
   { lib "glfw3" pkg { static true flags [ "--libs" ] name "glfw3" } }
 ]
 
@@ -36,12 +37,15 @@ library_path: [
 include_path: [
   "$(DIR)/extern/libme/include"
   "$(DIR)/extern/glfw/include"
+  "$(DIR)/extern/portaudio/include"
+  "$(DIR)/extern/rapidxml"
 ]
 
 define: [
   { name "WAYLAND" }
 ]
 
+flags: ["-g"]
 files: $sources
 makefile: "$(DIR)/Makefile"
 ycm_config: "$(DIR)/.ycm_extra_conf.py"

@@ -4,7 +4,7 @@
 
 #include <cmath>
 #include <cstring>
-#include <map>
+#include <lme/map.hpp>
 #include <algorithm>
 #include <vulkan/vulkan_core.h>
 
@@ -17,7 +17,6 @@ int me::Vulkan::initialize()
 {
   /* make a logger */
   logger = engine->get_logger().child("Vulkan");
-  logger->trace_all();
 
   extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
@@ -45,7 +44,7 @@ int me::Vulkan::initialize()
 
   VkResult result = vkCreateInstance(&instance_info, nullptr, &instance);
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to create instance [%s]", vk_utils_result_string(result));
+    throw exception("failed to create instance [%s]", vk_utils_result_string(result));
 
 
   /* create window surface */
@@ -54,7 +53,7 @@ int me::Vulkan::initialize()
   /* get a physical device */
   get_physical_device(VK_QUEUE_GRAPHICS_BIT, extensions, { }, physical_device_info);
   if (physical_device_info.device == VK_NULL_HANDLE)
-    throw Exception(logger->get_prefix(), true, "no suitable GPU found");
+    throw exception("no suitable GPU found");
 
   /* create a logical device */
   create_device(device);
@@ -112,7 +111,7 @@ int me::Vulkan::get_physical_device_queue_family(const VkPhysicalDevice physical
 }
 
 int me::Vulkan::get_physical_device_extensions(const VkPhysicalDevice physical_device,
-    const std::vector<const char*> &required_extensions, std::vector<VkExtensionProperties> &extensions)
+    const vector<const char*> &required_extensions, vector<VkExtensionProperties> &extensions)
 {
   /* get extension properties from physical device */
   uint32_t extension_count;
@@ -142,14 +141,14 @@ int me::Vulkan::get_physical_device_extensions(const VkPhysicalDevice physical_d
 }
 
 int me::Vulkan::get_physical_device_features(const VkPhysicalDevice physical_device,
-    const std::vector<const char*> &required_features, VkPhysicalDeviceFeatures &features)
+    const vector<const char*> &required_features, VkPhysicalDeviceFeatures &features)
 {
   vkGetPhysicalDeviceFeatures(physical_device, &features);
   return 1;
 }
 
 int me::Vulkan::get_physical_device(const int required_flags,
-    const std::vector<const char*> &required_extensions, const std::vector<const char*> &required_features, PhysicalDeviceInfo &physical_device_info)
+    const vector<const char*> &required_extensions, const vector<const char*> &required_features, PhysicalDeviceInfo &physical_device_info)
 {
   /* get the count of physical devices */
   uint32_t physical_device_count;
@@ -176,7 +175,7 @@ int me::Vulkan::get_physical_device(const int required_flags,
       continue;
 
     /* check and get physical device extensions */
-    std::vector<VkExtensionProperties> physical_device_extensions;
+    vector<VkExtensionProperties> physical_device_extensions;
     if (!get_physical_device_extensions(physical_devices[i], required_extensions, physical_device_extensions))
       continue;
 
@@ -193,7 +192,7 @@ int me::Vulkan::get_physical_device(const int required_flags,
       physical_device_info.properties = physical_device_properties;
       physical_device_info.features = physical_device_features;
       physical_device_info.extensions = physical_device_extensions;
-      physical_device_info.queue_family_indices.graphics = family_index;
+      physical_device_info.queue_family_indices.graphics.assign(family_index);
     }
   }
   return 0;
@@ -234,7 +233,7 @@ int me::Vulkan::create_device(VkDevice &device)
 
   VkResult result = vkCreateDevice(physical_device_info.device, &device_create_info, nullptr, &device);
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to create device [%s]", vk_utils_result_string(result));
+    throw exception("failed to create device [%s]", vk_utils_result_string(result));
 
   return 0;
 }
@@ -250,13 +249,13 @@ int me::Vulkan::create_command_pool(VkCommandPool &command_pool)
 
   VkResult result = vkCreateCommandPool(device, &command_pool_create_info, nullptr, &command_pool);
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to create command pool [%s]", vk_utils_result_string(result));
+    throw exception("failed to create command pool [%s]", vk_utils_result_string(result));
 
   return 0;
 }
 
 
-int me::Vulkan::get_surface_format(const std::vector<VkSurfaceFormatKHR> &formats, VkSurfaceFormatKHR &format)
+int me::Vulkan::get_surface_format(const vector<VkSurfaceFormatKHR> &formats, VkSurfaceFormatKHR &format)
 {
 #define FORMAT VK_FORMAT_B8G8R8A8_UNORM
 #define COLOR_SPACE VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
@@ -285,10 +284,10 @@ int me::Vulkan::get_surface_format(const std::vector<VkSurfaceFormatKHR> &format
 #undef FORMAT
 #undef COLOR_SPACE
 
-  throw Exception(logger->get_prefix(), true, "no surface formats was provided");
+  throw exception("no surface formats was provided");
 }
 
-int me::Vulkan::get_present_mode(const std::vector<VkPresentModeKHR> &modes, VkPresentModeKHR &mode)
+int me::Vulkan::get_present_mode(const vector<VkPresentModeKHR> &modes, VkPresentModeKHR &mode)
 {
   for (uint32_t i = 0; i < modes.size(); i++)
   {
@@ -329,31 +328,31 @@ int me::Vulkan::create_swapchain(SwapchainInfo &swapchain_info)
   /* get physical device surface capabilities */
   VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device_info.device, surface, &surface_info.capabilities);
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to get physical device surface capabilities [%s]", vk_utils_result_string(result));
+    throw exception("failed to get physical device surface capabilities [%s]", vk_utils_result_string(result));
 
 
   /* get surface formats */
   uint32_t surface_format_count;
   result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device_info.device, surface, &surface_format_count, nullptr);
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to get physical device surface formats count [%s]", vk_utils_result_string(result));
+    throw exception("failed to get physical device surface formats count [%s]", vk_utils_result_string(result));
 
   surface_info.formats.resize(surface_format_count);
   result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device_info.device, surface, &surface_format_count, surface_info.formats.data());
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to get physical device surface formats [%s]", vk_utils_result_string(result));
+    throw exception("failed to get physical device surface formats [%s]", vk_utils_result_string(result));
 
 
   /* get surface present modes */
   uint32_t present_mode_count;
   result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device_info.device, surface, &present_mode_count, nullptr);
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to get physical device surface present modes count [%s]", vk_utils_result_string(result));
+    throw exception("failed to get physical device surface present modes count [%s]", vk_utils_result_string(result));
 
   surface_info.present_modes.resize(present_mode_count);
   result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device_info.device, surface, &present_mode_count, surface_info.present_modes.data());
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to get physical device surface present modes [%s]", vk_utils_result_string(result));
+    throw exception("failed to get physical device surface present modes [%s]", vk_utils_result_string(result));
 
 
   /* get surface format */
@@ -394,19 +393,19 @@ int me::Vulkan::create_swapchain(SwapchainInfo &swapchain_info)
 
   result = vkCreateSwapchainKHR(device, &swapchain_create_info, nullptr, &swapchain_info.swapchain);
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to create swapchain [%s]", vk_utils_result_string(result));
+    throw exception("failed to create swapchain [%s]", vk_utils_result_string(result));
 
 
   /* get swapchain images */
   uint32_t image_count;
   result = vkGetSwapchainImagesKHR(device, swapchain_info.swapchain, &image_count, nullptr);
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to get swapchain images count [%s]", vk_utils_result_string(result));
+    throw exception("failed to get swapchain images count [%s]", vk_utils_result_string(result));
 
   swapchain_info.images.resize(image_count);
   result = vkGetSwapchainImagesKHR(device, swapchain_info.swapchain, &image_count, swapchain_info.images.data());
   if (result != VK_SUCCESS)
-    throw Exception(logger->get_prefix(), true, "failed to get swapchain images [%s]", vk_utils_result_string(result));
+    throw exception("failed to get swapchain images [%s]", vk_utils_result_string(result));
 
 
   /* create swapchain image views */
@@ -432,8 +431,28 @@ int me::Vulkan::create_swapchain(SwapchainInfo &swapchain_info)
 
     result = vkCreateImageView(device, &image_view_create_info, nullptr, &swapchain_info.image_views.at(i));
     if (result != VK_SUCCESS)
-      throw Exception(logger->get_prefix(), true, "failed to create image view [%s]", vk_utils_result_string(result));
+      throw exception("failed to create image view [%s]", vk_utils_result_string(result));
   }
 
+  return 0;
+}
+
+
+int me::Vulkan::compile_shader(Shader* shader) const
+{
+  VkShaderModuleCreateInfo shader_create_info = { };
+  shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+  shader_create_info.pNext = nullptr;
+  shader_create_info.flags = 0;
+  shader_create_info.codeSize = shader->get_length();
+  shader_create_info.pCode = reinterpret_cast<const uint32_t*>(shader->get_data());
+
+  VkShaderModule shader_module;
+  VkResult result = vkCreateShaderModule(device, &shader_create_info, nullptr, &shader_module);
+  if (result != VK_SUCCESS)
+    throw exception("failed to create shader module [%s]", vk_utils_result_string(result));
+
+  shader->set_link(storage.shaders.size());
+  storage.shaders.push_back(shader_module);
   return 0;
 }

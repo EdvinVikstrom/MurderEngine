@@ -1,8 +1,6 @@
 #ifndef ME_LOGGER_HPP
   #define ME_LOGGER_HPP
 
-#include <string>
-
 namespace me {
 
   class Logger {
@@ -25,9 +23,7 @@ namespace me {
 
   public:
 
-    Logger(const char* prefix, const Logger* parent = nullptr);
-
-    const char* get_prefix() const;
+    Logger(const char* prefix, const uint8_t tracing = (FATAL | ERR | WARN | INFO), const Logger* parent = nullptr);
 
     void fatal(const char* format, ...) const;
     void err(const char* format, ...) const;
@@ -39,25 +35,6 @@ namespace me {
     void trace_all();
 
     Logger* child(const char* name) const;
-
-  };
-
-  class Exception : public std::exception {
-
-  protected:
-
-    const char* prefix;
-    const bool fatal;
-    char* const message;
-
-  public:
-
-    Exception(const char* prefix, const bool fatal, const char* format, ...);
-
-    const bool is_fatal() const;
-    const char* get_message() const;
-
-    const char* what() const throw();
 
   };
 

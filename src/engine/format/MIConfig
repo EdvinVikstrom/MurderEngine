@@ -1,0 +1,3 @@
+sources += [
+  "$(DIR)/shader/shader_format.cpp"
+]

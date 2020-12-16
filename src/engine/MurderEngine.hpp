@@ -14,8 +14,8 @@
 
 #include "Logger.hpp"
 
-#include <vector>
-#include <string>
+#include <lme/vector.hpp>
+#include <lme/string.hpp>
 
 namespace me {
 
@@ -37,7 +37,7 @@ namespace me {
     Logger logger;
 
     bool running = false;
-    std::vector<Module*> modules;
+    vector<Module*> modules;
 
   public:
 
@@ -51,7 +51,9 @@ namespace me {
     int terminate();
 
     int load_module(Module* module);
-    Module* get_module(const std::string &id) const;
+    Module* get_module(const string &id) const;
+
+    int print_module_exception(const Module &module, const exception &except);
 
   };
 
