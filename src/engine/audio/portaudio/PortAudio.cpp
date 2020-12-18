@@ -48,7 +48,7 @@ int me::PortAudio::terminate()
   return 0;
 }
 
-int me::PortAudio::tick()
+int me::PortAudio::tick(const Context context)
 {
   return 0;
 }

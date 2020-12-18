@@ -31,7 +31,7 @@ SOURCES = ./src/Main.cpp \
 	./src/engine/MurderEngine.cpp \
 	./src/engine/Logger.cpp \
 	./src/engine/renderer/vulkan/Vulkan.cpp \
-	./src/engine/surface/window/Window.cpp \
+	./src/engine/surface/window/VKWindowSurface.cpp \
 	./src/engine/scene/Scene.cpp \
 	./src/engine/audio/portaudio/PortAudio.cpp \
 	./src/engine/format/shader/shader_format.cpp

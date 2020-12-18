@@ -1,5 +1,6 @@
 #include "engine/MurderEngine.hpp"
-#include "engine/surface/window/Window.hpp"
+#include "engine/surface/VulkanSurface.hpp"
+#include "engine/surface/window/VKWindowSurface.hpp"
 #include "engine/renderer/vulkan/Vulkan.hpp"
 #include "engine/audio/portaudio/PortAudio.hpp"
 
@@ -11,7 +12,7 @@ class Sandbox : public me::Module {
 
 public:
 
-  me::Surface* surface;
+  me::VulkanSurface* surface;
   me::Renderer* renderer;
   me::AudioSystem* audio_system;
 
@@ -26,8 +27,7 @@ protected:
 
   int initialize() override;
   int terminate() override;
-
-  int tick() override;
+  int tick(const Context context) override;
 
 };
 
@@ -42,7 +42,7 @@ int main(int argc, char** argv)
   engine.initialize(argc, argv);
 
   Sandbox* sandbox = new Sandbox(&engine);
-  sandbox->surface = new me::Window(&engine);
+  sandbox->surface = new me::VKWindowSurface(&engine, { .fps = 24 });
   sandbox->renderer = new me::Vulkan(&engine, *sandbox->surface);
   sandbox->audio_system = new me::PortAudio(&engine);
 
@@ -81,7 +81,7 @@ int Sandbox::terminate()
   return 0;
 }
 
-int Sandbox::tick()
+int Sandbox::tick(const Context context)
 {
   return 0;
 }

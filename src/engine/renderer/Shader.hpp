@@ -16,6 +16,12 @@ namespace me {
 
   public:
 
+    struct Config {
+      string entry_point;
+    };
+
+  public:
+
     typedef size_t Link;
 
   protected:
@@ -24,13 +30,15 @@ namespace me {
     const size_t length;
     const char* data;
 
+    mutable Config config;
     mutable Link link;
 
   public:
 
-    Shader(const string &source, const ShaderType type, const size_t length, const char* data, Link link = -1)
+    Shader(const string &source, const ShaderType type, const size_t length, const char* data, Config config, Link link = -1)
       : type(type), length(length), data(data)
     {
+      this->config = config;
       this->link = link;
     }
 
@@ -47,6 +55,11 @@ namespace me {
     const char* get_data() const
     {
       return data;
+    }
+
+    Config& get_config() const
+    {
+      return config;
     }
 
     Link get_link() const

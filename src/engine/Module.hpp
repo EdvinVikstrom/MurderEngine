@@ -17,30 +17,35 @@ namespace me {
       SURFACE, RENDERER, AUDIO, IO, OTHER
     };
 
+    struct Context {
+      size_t current_tick;
+      size_t current_time;
+    };
+
   protected:
 
     const MurderEngine* engine;
-    bool active;
-
     const Type type;
     const string name;
 
+    mutable size_t sleep;
+
   public:
 
-    Module(const MurderEngine* engine, const Type type, const string &name)
-      : engine(engine), type(type), name(name)
+    Module(const MurderEngine* engine, const Type type, const string &name, size_t sleep = 0)
+      : engine(engine), type(type), name(name), sleep(sleep)
     {
-      active = false;
     }
 
     const Type get_type() const
-    { return type; }
+    {
+      return type;
+    }
 
     const string& get_name() const
-    { return name; }
-
-    const bool is_active() const
-    { return active; }
+    {
+      return name;
+    }
 
 
     static inline const char* type_name(const Type type)
@@ -60,18 +65,7 @@ namespace me {
 
     virtual int initialize() = 0;
     virtual int terminate() = 0;
-
-    virtual int tick() = 0;
-
-    void enable()
-    {
-      active = true;
-    }
-
-    void disable()
-    {
-      active = false;
-    }
+    virtual int tick(const Context context) = 0;
 
   };
 

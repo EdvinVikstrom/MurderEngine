@@ -21,8 +21,7 @@ namespace me {
 
     int initialize() override;
     int terminate() override;
-
-    int tick() override;
+    int tick(const Context context) override;
 
   protected:
 

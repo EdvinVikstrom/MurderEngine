@@ -2,6 +2,8 @@
 
 #include "Module.hpp"
 
+#include <lme/time.hpp>
+
 me::MurderEngine::MurderEngine(const AppConfig &app_config)
   : app_config(app_config), logger("Engine")
 {
@@ -28,13 +30,12 @@ int me::MurderEngine::initialize_loop()
 {
   while (running)
   {
+    size_t current_time = time::milliseconds();
+
     for (Module* module : modules)
     {
-      if (!module->is_active())
-	continue;
-
       try {
-	module->tick();
+	module->tick({ 0L, current_time });
       }catch (const exception &e)
       {
 	print_module_exception(*module, e);
@@ -55,7 +56,6 @@ int me::MurderEngine::terminate()
 int me::MurderEngine::load_module(Module* module)
 {
   modules.push_back(module);
-  module->enable();
 
   try {
     module->initialize();

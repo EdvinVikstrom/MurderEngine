@@ -30,6 +30,10 @@ int me::format::shader_read(const string &source, const Buffer &buffer, Shader_R
 {
   const size_t data_length = buffer.seek_end();
   const char* data = buffer.pull_all();
-  result.shaders.push_back(new Shader(source, SHADER_VERTEX, data_length, data));
+
+  Shader::Config shader_config = {
+    .entry_point = "main"
+  };
+  result.shaders.push_back(new Shader(source, SHADER_VERTEX, data_length, data, shader_config));
   return 0;
 }

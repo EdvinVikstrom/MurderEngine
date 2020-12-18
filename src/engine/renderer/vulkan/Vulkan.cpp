@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <vulkan/vulkan_core.h>
 
-me::Vulkan::Vulkan(const MurderEngine* engine, const Surface &surface_instance)
+me::Vulkan::Vulkan(const MurderEngine* engine, const VulkanSurface &surface_instance)
   : Renderer(engine, "vulkan"), surface_instance(surface_instance)
 {
 }
@@ -20,6 +20,9 @@ int me::Vulkan::initialize()
 
   extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
+
+  uint32_t surface_extension_count;
+  const char** surface_extensions = surface_instance.get_extensions(surface_extension_count);
 
   /* create a vulkan instance */
   AppConfig app_config = engine->get_app_config();
@@ -39,8 +42,8 @@ int me::Vulkan::initialize()
   instance_info.pApplicationInfo = &app_info;
   instance_info.enabledLayerCount = 0;
   instance_info.ppEnabledLayerNames = nullptr;
-  instance_info.enabledExtensionCount = (uint32_t) surface_instance.get_extensions().size();
-  instance_info.ppEnabledExtensionNames = surface_instance.get_extensions().data();
+  instance_info.enabledExtensionCount = surface_extension_count;
+  instance_info.ppEnabledExtensionNames = surface_extensions;
 
   VkResult result = vkCreateInstance(&instance_info, nullptr, &instance);
   if (result != VK_SUCCESS)
@@ -64,10 +67,46 @@ int me::Vulkan::initialize()
   /* init swapchain */
   create_swapchain(swapchain_info);
 
+  /* create pipeline layout */
+  create_pipeline_layout(pipeline_layout_info);
+
+  /* create viewports */
+  viewport_info.viewports.push_back(VkViewport{
+      .x = 0.0F, .y = 0.0F,
+      .width = (float) swapchain_info.extent.width, .height = (float) swapchain_info.extent.height,
+      .minDepth = 0.0F, .maxDepth = 1.0F});
+  viewport_info.scissors.push_back(VkRect2D{
+      .offset = {0, 0},
+      .extent = swapchain_info.extent});
+  create_viewports(viewport_info);
+
+  /* create rasterizer */
+  create_rasterizer(rasterizer_info);
+
+  /* create multisampling */
+  create_multisampling(multisampling_info);
+
+  /* create color blend attachment */
+  color_blend_info.pipeline_color_blend_attachment_states.push_back(VkPipelineColorBlendAttachmentState{
+      VK_FALSE,
+      VK_BLEND_FACTOR_ONE,
+      VK_BLEND_FACTOR_ZERO,
+      VK_BLEND_OP_ADD,
+      VK_BLEND_FACTOR_ONE,
+      VK_BLEND_FACTOR_ZERO,
+      VK_BLEND_OP_ADD,
+      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT});
+  create_color_blend(color_blend_info);
+
+  /* create dynamic */
+  dynamic_info.dynamics.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+  dynamic_info.dynamics.push_back(VK_DYNAMIC_STATE_LINE_WIDTH);
+  create_dynamic(dynamic_info);
+
   return 0;
 }
 
-int me::Vulkan::tick()
+int me::Vulkan::tick(const Context context)
 {
   return 0;
 }
@@ -77,6 +116,7 @@ int me::Vulkan::terminate()
   for (VkImageView view : swapchain_info.image_views)
     vkDestroyImageView(device, view, nullptr);
 
+  vkDestroyPipelineLayout(device, pipeline_layout_info.pipeline_layout, nullptr);
   vkDestroySwapchainKHR(device, swapchain_info.swapchain, nullptr);
   vkDestroyCommandPool(device, command_pool, nullptr);
   vkDestroyDevice(device, nullptr);
@@ -363,6 +403,7 @@ int me::Vulkan::create_swapchain(SwapchainInfo &swapchain_info)
 
   /* get extent */
   get_extent(surface_instance, surface_info.capabilities, surface_info.extent);
+  swapchain_info.extent = surface_info.extent;
 
 
   uint32_t min_image_count = std::min(surface_info.capabilities.minImageCount + 1,
@@ -438,6 +479,98 @@ int me::Vulkan::create_swapchain(SwapchainInfo &swapchain_info)
 }
 
 
+int me::Vulkan::create_pipeline_layout(PipelineLayoutInfo &pipeline_layout_info)
+{
+  pipeline_layout_info.pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  pipeline_layout_info.pipeline_layout_create_info.pNext = nullptr;
+  pipeline_layout_info.pipeline_layout_create_info.flags = 0;
+  pipeline_layout_info.pipeline_layout_create_info.setLayoutCount = 0;
+  pipeline_layout_info.pipeline_layout_create_info.pSetLayouts = nullptr;
+  pipeline_layout_info.pipeline_layout_create_info.pushConstantRangeCount = 0;
+  pipeline_layout_info.pipeline_layout_create_info.pPushConstantRanges = nullptr;
+
+  VkResult result = vkCreatePipelineLayout(device, &pipeline_layout_info.pipeline_layout_create_info, nullptr, &pipeline_layout_info.pipeline_layout);
+  if (result != VK_SUCCESS)
+    throw exception("failed to create pipeline layout [%s]", vk_utils_result_string(result));
+  return 0;
+}
+
+
+int me::Vulkan::create_viewports(ViewportInfo &viewport_info)
+{
+  viewport_info.pipline_viewport_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  viewport_info.pipline_viewport_stage_create_info.pNext = nullptr;
+  viewport_info.pipline_viewport_stage_create_info.flags = 0;
+  viewport_info.pipline_viewport_stage_create_info.viewportCount = (uint32_t) viewport_info.viewports.size();
+  viewport_info.pipline_viewport_stage_create_info.pViewports = viewport_info.viewports.data();
+  viewport_info.pipline_viewport_stage_create_info.scissorCount = (uint32_t) viewport_info.scissors.size();
+  viewport_info.pipline_viewport_stage_create_info.pScissors = viewport_info.scissors.data();
+  return 0;
+}
+
+
+int me::Vulkan::create_rasterizer(RasterizerInfo &rasterizer_info)
+{
+  rasterizer_info.pipeline_rasterization_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+  rasterizer_info.pipeline_rasterization_state_create_info.pNext = nullptr;
+  rasterizer_info.pipeline_rasterization_state_create_info.flags = 0;
+  rasterizer_info.pipeline_rasterization_state_create_info.depthClampEnable = VK_FALSE;
+  rasterizer_info.pipeline_rasterization_state_create_info.rasterizerDiscardEnable = true;
+  rasterizer_info.pipeline_rasterization_state_create_info.polygonMode = VK_POLYGON_MODE_FILL;
+  rasterizer_info.pipeline_rasterization_state_create_info.cullMode = VK_CULL_MODE_BACK_BIT;
+  rasterizer_info.pipeline_rasterization_state_create_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
+  rasterizer_info.pipeline_rasterization_state_create_info.depthBiasEnable = VK_FALSE;
+  rasterizer_info.pipeline_rasterization_state_create_info.depthBiasConstantFactor = 0.0F;
+  rasterizer_info.pipeline_rasterization_state_create_info.depthBiasClamp = 0.0F;
+  rasterizer_info.pipeline_rasterization_state_create_info.depthBiasSlopeFactor = 0.0F;
+  rasterizer_info.pipeline_rasterization_state_create_info.lineWidth = 1.0F;
+  return 0;
+}
+
+
+int me::Vulkan::create_multisampling(MultisamplingInfo &multisampling_info)
+{
+  multisampling_info.pipeline_multisample_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+  multisampling_info.pipeline_multisample_state_create_info.pNext = nullptr;
+  multisampling_info.pipeline_multisample_state_create_info.flags = 0;
+  multisampling_info.pipeline_multisample_state_create_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+  multisampling_info.pipeline_multisample_state_create_info.sampleShadingEnable = VK_FALSE;
+  multisampling_info.pipeline_multisample_state_create_info.minSampleShading = 1.0F;
+  multisampling_info.pipeline_multisample_state_create_info.pSampleMask = nullptr;
+  multisampling_info.pipeline_multisample_state_create_info.alphaToCoverageEnable = VK_FALSE;
+  multisampling_info.pipeline_multisample_state_create_info.alphaToOneEnable = VK_FALSE;
+  return 0;
+}
+
+
+int me::Vulkan::create_color_blend(ColorBlendInfo &color_blend_info)
+{
+  color_blend_info.pipeline_color_blend_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+  color_blend_info.pipeline_color_blend_state_create_info.pNext = nullptr;
+  color_blend_info.pipeline_color_blend_state_create_info.flags = 0;
+  color_blend_info.pipeline_color_blend_state_create_info.logicOpEnable = VK_FALSE;
+  color_blend_info.pipeline_color_blend_state_create_info.logicOp = VK_LOGIC_OP_COPY;
+  color_blend_info.pipeline_color_blend_state_create_info.attachmentCount = (uint32_t) color_blend_info.pipeline_color_blend_attachment_states.size();
+  color_blend_info.pipeline_color_blend_state_create_info.pAttachments = color_blend_info.pipeline_color_blend_attachment_states.data();
+  color_blend_info.pipeline_color_blend_state_create_info.blendConstants[0] = 0.0F;
+  color_blend_info.pipeline_color_blend_state_create_info.blendConstants[1] = 0.0F;
+  color_blend_info.pipeline_color_blend_state_create_info.blendConstants[2] = 0.0F;
+  color_blend_info.pipeline_color_blend_state_create_info.blendConstants[3] = 0.0F;
+  return 0;
+}
+
+
+int me::Vulkan::create_dynamic(DynamicInfo &dynamic_info)
+{
+  dynamic_info.pipline_dynamic_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+  dynamic_info.pipline_dynamic_state_create_info.pNext = nullptr;
+  dynamic_info.pipline_dynamic_state_create_info.flags = 0;
+  dynamic_info.pipline_dynamic_state_create_info.dynamicStateCount = (uint32_t) dynamic_info.dynamics.size();
+  dynamic_info.pipline_dynamic_state_create_info.pDynamicStates = dynamic_info.dynamics.data();
+  return 0;
+}
+
+
 int me::Vulkan::compile_shader(Shader* shader) const
 {
   VkShaderModuleCreateInfo shader_create_info = { };
@@ -452,7 +585,16 @@ int me::Vulkan::compile_shader(Shader* shader) const
   if (result != VK_SUCCESS)
     throw exception("failed to create shader module [%s]", vk_utils_result_string(result));
 
-  shader->set_link(storage.shaders.size());
-  storage.shaders.push_back(shader_module);
+
+  VkPipelineShaderStageCreateInfo shader_stage_create_info = { };
+  shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  shader_stage_create_info.pNext = nullptr;
+  shader_stage_create_info.flags = 0;
+  shader_stage_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+  shader_stage_create_info.module = shader_module;
+  shader_stage_create_info.pName = shader->get_config().entry_point.c_str();
+  shader_stage_create_info.pSpecializationInfo = nullptr;
+
+  temp.pipeline_shader_stage_create_infos.push_back(shader_stage_create_info);
   return 0;
 }

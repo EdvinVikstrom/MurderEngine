@@ -3,8 +3,6 @@
 
 #include "../Module.hpp"
 
-#include <vulkan/vulkan.h>
-
 #include <lme/vector.hpp>
 #include <lme/string.hpp>
 
@@ -12,23 +10,30 @@ namespace me {
 
   class Surface : public Module {
 
+  public:
+
+    struct Config {
+      uint32_t fps;
+    };
+
   protected:
 
-    vector<const char*> extensions;
+    mutable Config config;
 
   public:
 
-    explicit Surface(const MurderEngine* engine, const string &name)
+    explicit Surface(const MurderEngine* engine, const string &name, Config config)
       : Module(engine, Module::SURFACE, name)
     {
+      this->config = config;
     }
 
-    const vector<const char*>& get_extensions() const
-    { return extensions; }
+    Config& get_config() const
+    {
+      return config;
+    }
 
     virtual int get_size(uint32_t &width, uint32_t &height) const = 0;
-
-    virtual int create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const = 0;
 
   };
 
