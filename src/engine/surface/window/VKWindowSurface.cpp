@@ -58,7 +58,6 @@ const char** me::VKWindowSurface::get_extensions(uint32_t &count) const
 
   if (extensions == nullptr)
     throw exception("failed to get GLFW required instance extensions");
-
   return extensions;
 }
 

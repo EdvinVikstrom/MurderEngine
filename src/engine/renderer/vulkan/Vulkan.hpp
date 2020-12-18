@@ -19,91 +19,55 @@ namespace me {
   /* structs */
   protected:
 
-    struct QueueFamilyIndices {
-      optional<uint32_t> graphics;
-    };
-    
-    struct PhysicalDeviceInfo {
-      VkPhysicalDevice device;
-      VkPhysicalDeviceProperties properties;
-      VkPhysicalDeviceFeatures features;
-      vector<VkExtensionProperties> extensions;
-      QueueFamilyIndices queue_family_indices;
-    };
+    struct QueueFamilyIndices;
+    struct InstanceInfo;
+    struct InstanceCreateInfo;
+    struct PhysicalDeviceInfo;
+    struct PhysicalDeviceCreateInfo;
+    struct LogicalDeviceInfo;
+    struct LogicalDeviceCreateInfo;
+    struct CommandPoolInfo;
+    struct CommandPoolCreateInfo;
+    struct SurfaceInfo;
+    struct SurfaceCreateInfo;
+    struct SwapchainInfo;
+    struct SwapchainCreateInfo;
+    struct PipelineLayoutInfo;
+    struct PipelineLayoutCreateInfo;
+    struct RenderPassInfo;
+    struct RenderPassCreateInfo;
+    struct GraphicsPipelineInfo;
+    struct GraphicsPipelineCreateInfo;
+    struct ViewportInfo;
+    struct RasterizerInfo;
+    struct MultisamplingInfo;
+    struct ColorBlendInfo;
+    struct DynamicInfo;
+    struct Storage;
+    struct Temp;
 
-    struct SurfaceInfo {
-      VkSurfaceCapabilitiesKHR capabilities;
-      vector<VkSurfaceFormatKHR> formats;
-      vector<VkPresentModeKHR> present_modes;
-
-      VkSurfaceFormatKHR format;
-      VkPresentModeKHR present_mode;
-
-      VkExtent2D extent;
-    };
-
-    struct SwapchainInfo {
-      VkSwapchainKHR swapchain;
-      VkExtent2D extent;
-      vector<VkImage> images;
-      vector<VkImageView> image_views;
-    };
-
-    struct PipelineLayoutInfo {
-      VkPipelineLayout pipeline_layout;
-      VkPipelineLayoutCreateInfo pipeline_layout_create_info;
-    };
-
-    struct ViewportInfo {
-      vector<VkViewport> viewports;
-      vector<VkRect2D> scissors;
-      VkPipelineViewportStateCreateInfo pipline_viewport_stage_create_info;
-    };
-
-    struct RasterizerInfo {
-      VkPipelineRasterizationStateCreateInfo pipeline_rasterization_state_create_info;
-    };
-
-    struct MultisamplingInfo {
-      VkPipelineMultisampleStateCreateInfo pipeline_multisample_state_create_info;
-    };
-
-    struct ColorBlendInfo {
-      vector<VkPipelineColorBlendAttachmentState> pipeline_color_blend_attachment_states;
-      VkPipelineColorBlendStateCreateInfo pipeline_color_blend_state_create_info;
-    };
-
-    struct DynamicInfo {
-      vector<VkDynamicState> dynamics;
-      VkPipelineDynamicStateCreateInfo pipline_dynamic_state_create_info;
-    };
-
-    struct Storage {
-      vector<VkShaderModule> shaders;
-    };
-
-    struct Temp {
-      vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stage_create_infos;
-    };
+#include "Structs.hpp"
 
   protected:
 
     Logger* logger;
 
-    const VulkanSurface &surface_instance;
     vector<const char*> extensions;
 
     mutable Storage storage;
     mutable Temp temp;
 
-    VkInstance instance;
-    VkSurfaceKHR surface;
-    PhysicalDeviceInfo physical_device_info = { VK_NULL_HANDLE };
-    VkDevice device;
-    VkCommandPool command_pool;
+    const VulkanSurface &me_surface;
+
+    InstanceInfo instance_info;
+    PhysicalDeviceInfo physical_device_info;
+    LogicalDeviceInfo logical_device_info;
+    CommandPoolInfo command_pool_info;
     SurfaceInfo surface_info;
     SwapchainInfo swapchain_info;
     PipelineLayoutInfo pipeline_layout_info;
+    RenderPassInfo render_pass_info;
+
     ViewportInfo viewport_info;
     RasterizerInfo rasterizer_info;
     MultisamplingInfo multisampling_info;
@@ -112,7 +76,7 @@ namespace me {
 
   public:
 
-    explicit Vulkan(const MurderEngine* engine, const VulkanSurface &surface_instance);
+    explicit Vulkan(const MurderEngine* engine, const VulkanSurface &me_surface);
 
     int compile_shader(Shader* shader) const override;
 
@@ -122,45 +86,49 @@ namespace me {
     int terminate() override;
     int tick(const Context context) override;
 
-    /* physical device */
-    int get_physical_device_queue_family(const VkPhysicalDevice physical_device,
-	const int required_flags, uint32_t &family_index);
-    int get_physical_device_extensions(const VkPhysicalDevice physical_device,
-	const vector<const char*> &required_extensions, vector<VkExtensionProperties> &extensions);
-    int get_physical_device_features(const VkPhysicalDevice physical_device,
-	const vector<const char*> &required_features, VkPhysicalDeviceFeatures &features);
-    int get_physical_device(const int required_flags,
-	const vector<const char*> &required_extensions, const vector<const char*> &required_features, PhysicalDeviceInfo &physical_device_info);
+    int setup_instance();
+    int setup_physical_device();
+    int setup_surface();
+    int setup_logical_device();
+    int setup_command_pool();
+    int setup_swapchain();
+    int setup_pipeline_layout();
+    int setup_render_pass();
 
-    /* logical device */
-    int create_device(VkDevice &device);
+    int setup_viewports();
+    int setup_rasterizer();
+    int setup_multisampling();
+    int setup_color_blend();
+    int setup_dynamic();
 
-    /* command pool */
-    int create_command_pool(VkCommandPool &command_pool);
+    int create_instance(InstanceCreateInfo &instance_create_info, InstanceInfo &instance_info);
+    int create_physical_device(PhysicalDeviceCreateInfo &physical_device_create_info, PhysicalDeviceInfo &physical_device_info);
+    int create_surface(SurfaceCreateInfo &surface_create_info, SurfaceInfo &surface_info);
+    int create_logical_device(LogicalDeviceCreateInfo &logical_device_create_info, LogicalDeviceInfo &logical_device_info);
+    int create_command_pool(CommandPoolCreateInfo &command_pool_create_info, CommandPoolInfo &command_pool_info);
+    int create_swapchain(SwapchainCreateInfo &swapchain_create_info, SwapchainInfo &swapchain_info);
+    int create_pipeline_layout(PipelineLayoutCreateInfo &pipeline_layout_create_info, PipelineLayoutInfo &pipeline_layout_info);
+    int create_render_pass(RenderPassCreateInfo &render_pass_create_info, RenderPassInfo &render_pass_info);
 
-    /* swapchain */
-    int get_surface_format(const vector<VkSurfaceFormatKHR> &formats, VkSurfaceFormatKHR &format);
-    int get_present_mode(const vector<VkPresentModeKHR> &modes, VkPresentModeKHR &mode);
-    int get_extent(const Surface &surface_instance, const VkSurfaceCapabilitiesKHR surface_capabilities, VkExtent2D &extent);
-    int create_swapchain(SwapchainInfo &swapchain_info);
-
-    /* pipeline layout */
-    int create_pipeline_layout(PipelineLayoutInfo &pipeline_layout_info);
-
-    /* viewport */
     int create_viewports(ViewportInfo &viewport_info);
-
-    /* rasterizer */
     int create_rasterizer(RasterizerInfo &rasterizer_info);
-
-    /* multisampling */
     int create_multisampling(MultisamplingInfo &multisampling_info);
-
-    /* color blending */
     int create_color_blend(ColorBlendInfo &color_blend_info);
-
-    /* dynamic */
     int create_dynamic(DynamicInfo &dynamic_info);
+
+    /* physical device */
+    int get_physical_device_queue_family(const VkPhysicalDevice physical_device, QueueFamilyIndices &indices);
+    int get_physical_device_features(const VkPhysicalDevice physical_device, VkPhysicalDeviceFeatures &features);
+    int get_physical_device_extensions(const VkPhysicalDevice physical_device, vector<VkExtensionProperties> &extensions);
+    int get_physical_device_properties(const VkPhysicalDevice physical_device, VkPhysicalDeviceProperties &properties);
+    int get_physical_devices(vector<VkPhysicalDevice> &physical_devices);
+
+    /* surface */
+    int get_surface_formats(const VkSurfaceKHR surface, vector<VkSurfaceFormatKHR> &formats);
+    int get_surface_present_modes(const VkSurfaceKHR surface, vector<VkPresentModeKHR> &modes);
+    int get_surface_capabilities(const VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR &capabilities);
+
+
 
   };
 
