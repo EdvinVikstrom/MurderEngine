@@ -1,6 +1,8 @@
 #ifndef ME_VULKAN_HPP
   #define ME_VULKAN_HPP
 
+#include "VulkanMemory.hpp"
+
 #include "../Renderer.hpp"
 #include "../../surface/VulkanSurface.hpp"
 #include "../../memory/MemoryPool.hpp"
@@ -21,23 +23,14 @@ namespace me {
 
     struct QueueFamilyIndices;
     struct InstanceInfo;
-    struct InstanceCreateInfo;
     struct PhysicalDeviceInfo;
-    struct PhysicalDeviceCreateInfo;
     struct LogicalDeviceInfo;
-    struct LogicalDeviceCreateInfo;
     struct CommandPoolInfo;
-    struct CommandPoolCreateInfo;
     struct SurfaceInfo;
-    struct SurfaceCreateInfo;
     struct SwapchainInfo;
-    struct SwapchainCreateInfo;
     struct PipelineLayoutInfo;
-    struct PipelineLayoutCreateInfo;
     struct RenderPassInfo;
-    struct RenderPassCreateInfo;
     struct GraphicsPipelineInfo;
-    struct GraphicsPipelineCreateInfo;
     struct ViewportInfo;
     struct RasterizerInfo;
     struct MultisamplingInfo;
@@ -52,12 +45,13 @@ namespace me {
 
     Logger* logger;
 
-    vector<const char*> extensions;
+    VulkanAlloc alloc;
 
     mutable Storage storage;
     mutable Temp temp;
 
     const VulkanSurface &me_surface;
+    vector<const char*> required_device_extensions;
 
     InstanceInfo instance_info;
     PhysicalDeviceInfo physical_device_info;
@@ -88,9 +82,9 @@ namespace me {
 
     int setup_instance();
     int setup_physical_device();
-    int setup_surface();
     int setup_logical_device();
     int setup_command_pool();
+    int setup_surface();
     int setup_swapchain();
     int setup_pipeline_layout();
     int setup_render_pass();
@@ -101,33 +95,30 @@ namespace me {
     int setup_color_blend();
     int setup_dynamic();
 
-    int create_instance(InstanceCreateInfo &instance_create_info, InstanceInfo &instance_info);
-    int create_physical_device(PhysicalDeviceCreateInfo &physical_device_create_info, PhysicalDeviceInfo &physical_device_info);
-    int create_surface(SurfaceCreateInfo &surface_create_info, SurfaceInfo &surface_info);
-    int create_logical_device(LogicalDeviceCreateInfo &logical_device_create_info, LogicalDeviceInfo &logical_device_info);
-    int create_command_pool(CommandPoolCreateInfo &command_pool_create_info, CommandPoolInfo &command_pool_info);
-    int create_swapchain(SwapchainCreateInfo &swapchain_create_info, SwapchainInfo &swapchain_info);
-    int create_pipeline_layout(PipelineLayoutCreateInfo &pipeline_layout_create_info, PipelineLayoutInfo &pipeline_layout_info);
-    int create_render_pass(RenderPassCreateInfo &render_pass_create_info, RenderPassInfo &render_pass_info);
-
-    int create_viewports(ViewportInfo &viewport_info);
-    int create_rasterizer(RasterizerInfo &rasterizer_info);
-    int create_multisampling(MultisamplingInfo &multisampling_info);
-    int create_color_blend(ColorBlendInfo &color_blend_info);
-    int create_dynamic(DynamicInfo &dynamic_info);
+    int get_physical_device_infos(uint32_t &physical_device_count, VkPhysicalDevice*, PhysicalDeviceInfo*);
 
     /* physical device */
-    int get_physical_device_queue_family(const VkPhysicalDevice physical_device, QueueFamilyIndices &indices);
-    int get_physical_device_features(const VkPhysicalDevice physical_device, VkPhysicalDeviceFeatures &features);
-    int get_physical_device_extensions(const VkPhysicalDevice physical_device, vector<VkExtensionProperties> &extensions);
-    int get_physical_device_properties(const VkPhysicalDevice physical_device, VkPhysicalDeviceProperties &properties);
-    int get_physical_devices(vector<VkPhysicalDevice> &physical_devices);
+    static int get_physical_device_queue_family(const VkPhysicalDevice, QueueFamilyIndices&);
+    static int get_physical_device_features(const VkPhysicalDevice, VkPhysicalDeviceFeatures&);
+    static int get_physical_device_extensions(const VkPhysicalDevice, uint32_t &extension_count, VkExtensionProperties*);
+    static int get_physical_device_properties(const VkPhysicalDevice, VkPhysicalDeviceProperties&);
+    static int get_physical_devices(const VkInstance, uint32_t &physical_device_count, VkPhysicalDevice*);
 
     /* surface */
-    int get_surface_formats(const VkSurfaceKHR surface, vector<VkSurfaceFormatKHR> &formats);
-    int get_surface_present_modes(const VkSurfaceKHR surface, vector<VkPresentModeKHR> &modes);
-    int get_surface_capabilities(const VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR &capabilities);
+    static int get_surface_formats(const VkPhysicalDevice, const VkSurfaceKHR, uint32_t &count, VkSurfaceFormatKHR*);
+    static int get_surface_present_modes(const VkPhysicalDevice, const VkSurfaceKHR, uint32_t &count, VkPresentModeKHR*);
+    static int get_surface_capabilities(const VkPhysicalDevice, const VkSurfaceKHR, VkSurfaceCapabilitiesKHR&);
 
+
+    static bool has_required_extensions(const PhysicalDeviceInfo&, const vector<const char*> &required_extensions);
+    static bool has_present_mode(const uint32_t present_mode_count, const VkPresentModeKHR* present_modes, const VkPresentModeKHR present_mode);
+
+    static int find_surface_format(const VkFormat color_format, const VkColorSpaceKHR color_space, const uint32_t format_count, const VkSurfaceFormatKHR*, VkSurfaceFormatKHR&);
+
+    static int get_extension_names(uint32_t extension_count, const VkExtensionProperties* extensions, const char** extension_names);
+    static int get_surface_extent(const VkExtent2D max_extent, const VkExtent2D min_extent, VkExtent2D &extent);
+
+    static int get_logical_device_queue_create_info(const uint32_t family_index, const uint32_t queue_count, const float* queue_priorities, VkDeviceQueueCreateInfo&);
 
 
   };

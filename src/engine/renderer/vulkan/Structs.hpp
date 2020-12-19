@@ -3,46 +3,23 @@ struct QueueFamilyIndices {
 };
 
 struct InstanceInfo {
-  VkInstance instance;
-};
-
-struct InstanceCreateInfo {
-  VkInstanceCreateInfo info;
-  VkApplicationInfo application_info;
-  vector<const char*> extensions;
+  VkInstance instance = VK_NULL_HANDLE;
 };
 
 struct PhysicalDeviceInfo {
-  VkPhysicalDevice device;
+  VkPhysicalDevice device = VK_NULL_HANDLE;
   VkPhysicalDeviceProperties properties;
-  vector<VkExtensionProperties> extensions;
+  VkArray<VkExtensionProperties> extensions;
   VkPhysicalDeviceFeatures features;
   QueueFamilyIndices queue_family_indices;
 };
 
-struct PhysicalDeviceCreateInfo {
-  vector<PhysicalDeviceInfo> physical_device_infos;
-  vector<const char*> required_extensions;
-  int required_flags;
-};
-
 struct LogicalDeviceInfo {
-  VkDevice device;
-};
-
-struct LogicalDeviceCreateInfo {
-  VkDeviceCreateInfo info;
-  vector<VkDeviceQueueCreateInfo> device_queue_create_infos;
-  vector<const char*> extension_names;
+  VkDevice device = VK_NULL_HANDLE;
 };
 
 struct CommandPoolInfo {
-  VkCommandPool command_pool;
-};
-
-struct CommandPoolCreateInfo {
-  VkCommandPoolCreateInfo info;
-  VkDevice device;
+  VkCommandPool command_pool = VK_NULL_HANDLE;
 };
 
 struct SurfaceInfo {
@@ -53,56 +30,29 @@ struct SurfaceInfo {
   VkExtent2D extent;
 };
 
-struct SurfaceCreateInfo {
-  vector<VkPresentModeKHR> present_modes;
-  vector<VkSurfaceFormatKHR> formats;
-};
-
 struct SwapchainInfo {
-  VkSwapchainKHR swapchain;
+  VkSwapchainKHR swapchain = VK_NULL_HANDLE;
   VkExtent2D image_extent;
   VkFormat image_format;
   VkColorSpaceKHR image_color_space;
-  vector<VkImage> images;
-  vector<VkImageView> image_views;
-};
-
-struct SwapchainCreateInfo {
-  VkSwapchainCreateInfoKHR info;
-  VkDevice device;
-  uint32_t min_image_count;
-  VkSurfaceKHR surface;
-  VkSurfaceTransformFlagBitsKHR pre_transform;
-  VkPresentModeKHR present_mode;
+  VkArray<VkImage> images;
+  VkArray<VkImageView> image_views;
 };
 
 struct PipelineLayoutInfo {
-  VkPipelineLayout pipeline_layout;
-};
-
-struct PipelineLayoutCreateInfo {
-  VkPipelineLayoutCreateInfo info;
-  VkDevice device;
+  VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
 };
 
 struct RenderPassInfo {
-  VkRenderPass render_pass;
-};
-
-struct RenderPassCreateInfo {
-  VkRenderPassCreateInfo info;
-  VkAttachmentDescription attachment_description;
+  VkRenderPass render_pass = VK_NULL_HANDLE;
 };
 
 struct GraphicsPipelineInfo {
 };
 
-struct GraphicsPipelineCreateInfo {
-};
-
 struct ViewportInfo {
-  vector<VkViewport> viewports;
-  vector<VkRect2D> scissors;
+  VkArray<VkViewport> viewports;
+  VkArray<VkRect2D> scissors;
 
   VkPipelineViewportStateCreateInfo pipline_viewport_stage_create_info;
 };
@@ -116,13 +66,13 @@ struct MultisamplingInfo {
 };
 
 struct ColorBlendInfo {
-  vector<VkPipelineColorBlendAttachmentState> pipeline_color_blend_attachment_states;
+  VkArray<VkPipelineColorBlendAttachmentState> pipeline_color_blend_attachment_states;
 
   VkPipelineColorBlendStateCreateInfo pipeline_color_blend_state_create_info;
 };
 
 struct DynamicInfo {
-  vector<VkDynamicState> dynamics;
+  VkArray<VkDynamicState> dynamics;
 
   VkPipelineDynamicStateCreateInfo pipline_dynamic_state_create_info;
 };
