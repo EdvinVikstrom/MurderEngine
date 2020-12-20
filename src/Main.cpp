@@ -46,11 +46,11 @@ int main(int argc, char** argv)
   sandbox->renderer = new me::Vulkan(&engine, *sandbox->surface);
   sandbox->audio_system = new me::PortAudio(&engine);
 
+  engine.load_module(sandbox);
   engine.load_module(sandbox->surface);
   engine.load_module(sandbox->renderer);
   engine.load_module(sandbox->audio_system);
 
-  engine.load_module(sandbox);
 
   engine.initialize_loop();
   return engine.terminate();
@@ -62,16 +62,25 @@ int Sandbox::initialize()
   size_t size;
   char* data;
 
-  me::File shader_file("src/res/shader_test.vert");
-  me::File::read(shader_file, size, data);
+  me::File vertex_shader_file("src/res/shader_test.vert");
+  me::File fragment_shader_file("src/res/shader_test.frag");
+  me::File::read(vertex_shader_file, size, data);
+  me::File::read(fragment_shader_file, size, data);
 
-  me::ByteBuffer buffer(size, data);
-  me::format::Shader_Result result;
-  me::format::shader_read(shader_file.get_path(), buffer, result);
+  me::ByteBuffer vertex_buffer(size, data);
+  me::format::Shader_Result vertex_result;
+  me::format::shader_read(vertex_shader_file.get_path(), vertex_buffer, vertex_result);
 
-  me::Shader* vertex_shader = result.shaders.at(0);
+  me::ByteBuffer fragment_buffer(size, data);
+  me::format::Shader_Result fragment_result;
+  me::format::shader_read(fragment_shader_file.get_path(), fragment_buffer, fragment_result);
 
-  renderer->compile_shader(vertex_shader);
+
+  me::Shader* vertex_shader = vertex_result.shaders.at(0);
+  me::Shader* fragment_shader = fragment_result.shaders.at(0);
+
+  renderer->queue_shader(vertex_shader);
+  renderer->queue_shader(fragment_shader);
 
   return 0;
 }

@@ -85,6 +85,24 @@ int me::Vulkan::get_surface_extent(const VkExtent2D max_extent,
   return 0;
 }
 
+int me::Vulkan::get_shader_stage_flag(const ShaderType shader_type,
+    VkShaderStageFlagBits &shader_stage_flag_bits)
+{
+  switch (shader_type)
+  {
+    case SHADER_VERTEX:
+      shader_stage_flag_bits = VK_SHADER_STAGE_VERTEX_BIT;
+      break;
+    case SHADER_FRAGMENT:
+      shader_stage_flag_bits = VK_SHADER_STAGE_FRAGMENT_BIT;
+      break;
+    case SHADER_GEOMETRY:
+      shader_stage_flag_bits = VK_SHADER_STAGE_GEOMETRY_BIT;
+      break;
+  }
+  return 0;
+}
+
 int me::Vulkan::get_logical_device_queue_create_info(const uint32_t family_index,
     const uint32_t queue_count,
     const float* queue_priorities,

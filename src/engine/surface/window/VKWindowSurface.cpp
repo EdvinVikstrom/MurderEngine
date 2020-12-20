@@ -47,8 +47,10 @@ int me::VKWindowSurface::tick(const Context context)
   if (glfwWindowShouldClose(glfw_window))
     return 1;
 
+  for (RenderLayer* layer : layers)
+    layer->render(false);
+
   glfwPollEvents();
-  sleep = 1000L / config.fps;
   return 0;
 }
 
@@ -64,5 +66,11 @@ const char** me::VKWindowSurface::get_extensions(uint32_t &count) const
 int me::VKWindowSurface::get_size(uint32_t &width, uint32_t &height) const
 {
   glfwGetWindowSize(glfw_window, (int*) &width, (int*) &height);
+  return 0;
+}
+
+int me::VKWindowSurface::register_layer(RenderLayer* layer) const
+{
+  layers.push_back(layer);
   return 0;
 }

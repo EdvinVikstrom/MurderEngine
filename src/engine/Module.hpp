@@ -28,12 +28,10 @@ namespace me {
     const Type type;
     const string name;
 
-    mutable size_t sleep;
-
   public:
 
-    Module(const MurderEngine* engine, const Type type, const string &name, size_t sleep = 0)
-      : engine(engine), type(type), name(name), sleep(sleep)
+    Module(const MurderEngine* engine, const Type type, const string &name)
+      : engine(engine), type(type), name(name)
     {
     }
 
@@ -65,7 +63,7 @@ namespace me {
 
     virtual int initialize() = 0;
     virtual int terminate() = 0;
-    virtual int tick(const Context context) = 0;
+    virtual int tick(const Context context) { return 0; };
 
   };
 

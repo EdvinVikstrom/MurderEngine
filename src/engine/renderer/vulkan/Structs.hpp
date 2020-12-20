@@ -1,3 +1,4 @@
+#include <vulkan/vulkan_core.h>
 struct QueueFamilyIndices {
   me::optional<uint32_t> graphics;
 };
@@ -39,15 +40,16 @@ struct SwapchainInfo {
   VkArray<VkImageView> image_views;
 };
 
-struct PipelineLayoutInfo {
-  VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
-};
-
 struct RenderPassInfo {
   VkRenderPass render_pass = VK_NULL_HANDLE;
 };
 
+struct PipelineLayoutInfo {
+  VkPipelineLayout pipeline_layout = VK_NULL_HANDLE;
+};
+
 struct GraphicsPipelineInfo {
+  VkPipeline pipeline;
 };
 
 struct ViewportInfo {
@@ -77,10 +79,15 @@ struct DynamicInfo {
   VkPipelineDynamicStateCreateInfo pipline_dynamic_state_create_info;
 };
 
+struct ShaderInfo {
+  VkPipelineVertexInputStateCreateInfo vertex_input_state;
+  VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
+};
+
 struct Storage {
-  vector<VkShaderModule> shaders;
 };
 
 struct Temp {
+  vector<Shader*> shader_queue;
   vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stage_create_infos;
 };

@@ -28,6 +28,8 @@ int me::Vulkan::initialize()
   setup_swapchain();
   setup_pipeline_layout();
   setup_render_pass();
+  setup_shaders();
+  setup_graphics_pipeline();
 
   setup_viewports();
   setup_rasterizer();
@@ -43,17 +45,14 @@ int me::Vulkan::terminate()
   for (uint32_t i = 0; i < swapchain_info.image_views.count; i++)
     vkDestroyImageView(logical_device_info.device, swapchain_info.image_views[i], nullptr);
 
+  vkDestroyPipeline(logical_device_info.device, graphics_pipeline_info.pipeline, nullptr);
   vkDestroyPipelineLayout(logical_device_info.device, pipeline_layout_info.pipeline_layout, nullptr);
+  vkDestroyRenderPass(logical_device_info.device, render_pass_info.render_pass, nullptr);
   vkDestroySwapchainKHR(logical_device_info.device, swapchain_info.swapchain, nullptr);
   vkDestroyCommandPool(logical_device_info.device, command_pool_info.command_pool, nullptr);
   vkDestroyDevice(logical_device_info.device, nullptr);
   vkDestroySurfaceKHR(instance_info.instance, surface_info.surface, nullptr);
   vkDestroyInstance(instance_info.instance, nullptr);
-  return 0;
-}
-
-int me::Vulkan::tick(const Context context)
-{
   return 0;
 }
 
@@ -303,6 +302,104 @@ int me::Vulkan::setup_pipeline_layout()
 
 int me::Vulkan::setup_render_pass()
 {
+  uint32_t color_attachment_description_count = 1;
+  VkAttachmentDescription color_attachment_descriptions[color_attachment_description_count];
+  color_attachment_descriptions[0].flags = 0;
+  color_attachment_descriptions[0].format = swapchain_info.image_format;
+  color_attachment_descriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
+  color_attachment_descriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+  color_attachment_descriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+  color_attachment_descriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+  color_attachment_descriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+  color_attachment_descriptions[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  color_attachment_descriptions[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+  uint32_t color_attachment_reference_count = 1;
+  VkAttachmentReference color_attachment_references[color_attachment_reference_count];
+  color_attachment_references[0].attachment = 0;
+  color_attachment_references[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+  uint32_t subpass_description_count = 1;
+  VkSubpassDescription subpass_descriptions[subpass_description_count];
+  subpass_descriptions[0].flags = 0;
+  subpass_descriptions[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  subpass_descriptions[0].inputAttachmentCount = 0;
+  subpass_descriptions[0].pInputAttachments = nullptr;
+  subpass_descriptions[0].colorAttachmentCount = color_attachment_reference_count;
+  subpass_descriptions[0].pColorAttachments = color_attachment_references;
+  subpass_descriptions[0].pResolveAttachments = nullptr;
+  subpass_descriptions[0].pDepthStencilAttachment = nullptr;
+  subpass_descriptions[0].preserveAttachmentCount = 0;
+  subpass_descriptions[0].pPreserveAttachments = nullptr;
+
+  VkRenderPassCreateInfo render_pass_create_info = { };
+  render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+  render_pass_create_info.pNext = nullptr;
+  render_pass_create_info.flags = 0;
+  render_pass_create_info.attachmentCount = color_attachment_description_count;
+  render_pass_create_info.pAttachments = color_attachment_descriptions;
+  render_pass_create_info.subpassCount = subpass_description_count;
+  render_pass_create_info.pSubpasses = subpass_descriptions;
+
+  VkResult result = vkCreateRenderPass(logical_device_info.device, &render_pass_create_info, nullptr, &render_pass_info.render_pass);
+  if (result != VK_SUCCESS)
+    throw exception("failed to create render pass [%s]", vk_utils_result_string(result));
+
+
+
+  return 0;
+}
+
+int me::Vulkan::setup_shaders()
+{
+  for (Shader* shader : temp.shader_queue)
+    compile_shader(shader);
+
+  shader_info.vertex_input_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+  shader_info.vertex_input_state.pNext = nullptr;
+  shader_info.vertex_input_state.flags = 0;
+  shader_info.vertex_input_state.vertexBindingDescriptionCount = 0;
+  shader_info.vertex_input_state.pVertexBindingDescriptions = nullptr;
+  shader_info.vertex_input_state.vertexAttributeDescriptionCount = 0;
+  shader_info.vertex_input_state.pVertexAttributeDescriptions = nullptr;
+
+  shader_info.input_assembly_state.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+  shader_info.input_assembly_state.pNext = nullptr;
+  shader_info.input_assembly_state.flags = 0;
+  shader_info.input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  shader_info.input_assembly_state.primitiveRestartEnable = VK_FALSE;
+  return 0;
+}
+
+int me::Vulkan::setup_graphics_pipeline()
+{
+  VkGraphicsPipelineCreateInfo graphics_pipeline_create_info = { };
+  graphics_pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+  graphics_pipeline_create_info.pNext = nullptr;
+  graphics_pipeline_create_info.flags = 0;
+  graphics_pipeline_create_info.stageCount = (uint32_t) temp.pipeline_shader_stage_create_infos.size();
+  graphics_pipeline_create_info.pStages = temp.pipeline_shader_stage_create_infos.data();
+  graphics_pipeline_create_info.pVertexInputState = &shader_info.vertex_input_state;
+  graphics_pipeline_create_info.pInputAssemblyState = &shader_info.input_assembly_state;
+  graphics_pipeline_create_info.pViewportState = &viewport_info.pipline_viewport_stage_create_info;
+  graphics_pipeline_create_info.pRasterizationState = &rasterizer_info.pipeline_rasterization_state_create_info;
+  graphics_pipeline_create_info.pMultisampleState = &multisampling_info.pipeline_multisample_state_create_info;
+  graphics_pipeline_create_info.pDepthStencilState = nullptr;
+  graphics_pipeline_create_info.pColorBlendState = &color_blend_info.pipeline_color_blend_state_create_info;
+  graphics_pipeline_create_info.pDynamicState = nullptr;
+  graphics_pipeline_create_info.layout = pipeline_layout_info.pipeline_layout;
+  graphics_pipeline_create_info.renderPass = render_pass_info.render_pass;
+  graphics_pipeline_create_info.subpass = 0;
+  graphics_pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
+  graphics_pipeline_create_info.basePipelineIndex = -1;
+
+  VkResult result = vkCreateGraphicsPipelines(logical_device_info.device, VK_NULL_HANDLE, 1, &graphics_pipeline_create_info, nullptr, &graphics_pipeline_info.pipeline);
+  if (result != VK_SUCCESS)
+    throw exception("failed to create graphics piplines [%s]", vk_utils_result_string(result));
+
+  for (const VkPipelineShaderStageCreateInfo shader_stage : temp.pipeline_shader_stage_create_infos)
+    vkDestroyShaderModule(logical_device_info.device, shader_stage.module, nullptr);
+  temp.pipeline_shader_stage_create_infos.clear();
   return 0;
 }
 
@@ -521,6 +618,12 @@ int me::Vulkan::get_surface_capabilities(const VkPhysicalDevice physical_device,
 }
 
 
+int me::Vulkan::queue_shader(Shader* shader) const
+{
+  temp.shader_queue.push_back(shader);
+  return 0;
+}
+
 int me::Vulkan::compile_shader(Shader* shader) const
 {
   VkShaderModuleCreateInfo shader_create_info = { };
@@ -535,16 +638,23 @@ int me::Vulkan::compile_shader(Shader* shader) const
   if (result != VK_SUCCESS)
     throw exception("failed to create shader module [%s]", vk_utils_result_string(result));
 
+  VkShaderStageFlagBits shader_stage_flag_bits;
+  get_shader_stage_flag(shader->get_type(), shader_stage_flag_bits);
 
   VkPipelineShaderStageCreateInfo shader_stage_create_info = { };
   shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
   shader_stage_create_info.pNext = nullptr;
   shader_stage_create_info.flags = 0;
-  shader_stage_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+  shader_stage_create_info.stage = shader_stage_flag_bits;
   shader_stage_create_info.module = shader_module;
   shader_stage_create_info.pName = shader->get_config().entry_point.c_str();
   shader_stage_create_info.pSpecializationInfo = nullptr;
 
   temp.pipeline_shader_stage_create_infos.push_back(shader_stage_create_info);
+  return 0;
+}
+
+int me::Vulkan::register_shader(Shader* shader) const
+{
   return 0;
 }

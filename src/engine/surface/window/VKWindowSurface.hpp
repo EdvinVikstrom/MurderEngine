@@ -15,11 +15,17 @@ namespace me {
 
     GLFWwindow* glfw_window;
 
+  protected:
+
+    mutable vector<RenderLayer*> layers;
+
   public:
 
     VKWindowSurface(const MurderEngine* engine, Config config);
 
     int get_size(uint32_t &width, uint32_t &height) const override;
+
+    int register_layer(RenderLayer* layer) const override;
 
     const char** get_extensions(uint32_t &count) const override;
     int create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const override;

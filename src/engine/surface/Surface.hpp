@@ -1,6 +1,8 @@
 #ifndef ME_SURFACE_HPP
   #define ME_SURFACE_HPP
 
+#include "RenderLayer.hpp"
+
 #include "../Module.hpp"
 
 #include <lme/vector.hpp>
@@ -34,6 +36,8 @@ namespace me {
     }
 
     virtual int get_size(uint32_t &width, uint32_t &height) const = 0;
+
+    virtual int register_layer(RenderLayer* layer) const = 0;
 
   };
 

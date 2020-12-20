@@ -18,7 +18,9 @@ namespace me {
     {
     }
 
+    virtual int queue_shader(Shader* shader) const = 0;
     virtual int compile_shader(Shader* shader) const = 0;
+    virtual int register_shader(Shader* shader) const = 0;
 
   };
 

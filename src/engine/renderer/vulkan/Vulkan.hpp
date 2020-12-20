@@ -28,14 +28,15 @@ namespace me {
     struct CommandPoolInfo;
     struct SurfaceInfo;
     struct SwapchainInfo;
-    struct PipelineLayoutInfo;
     struct RenderPassInfo;
+    struct PipelineLayoutInfo;
     struct GraphicsPipelineInfo;
     struct ViewportInfo;
     struct RasterizerInfo;
     struct MultisamplingInfo;
     struct ColorBlendInfo;
     struct DynamicInfo;
+    struct ShaderInfo;
     struct Storage;
     struct Temp;
 
@@ -51,6 +52,7 @@ namespace me {
     mutable Temp temp;
 
     const VulkanSurface &me_surface;
+    vector<RenderLayer*> layers;
     vector<const char*> required_device_extensions;
 
     InstanceInfo instance_info;
@@ -59,26 +61,29 @@ namespace me {
     CommandPoolInfo command_pool_info;
     SurfaceInfo surface_info;
     SwapchainInfo swapchain_info;
-    PipelineLayoutInfo pipeline_layout_info;
     RenderPassInfo render_pass_info;
+    PipelineLayoutInfo pipeline_layout_info;
+    GraphicsPipelineInfo graphics_pipeline_info;
 
     ViewportInfo viewport_info;
     RasterizerInfo rasterizer_info;
     MultisamplingInfo multisampling_info;
     ColorBlendInfo color_blend_info;
     DynamicInfo dynamic_info;
+    ShaderInfo shader_info;
 
   public:
 
     explicit Vulkan(const MurderEngine* engine, const VulkanSurface &me_surface);
 
+    int queue_shader(Shader* shader) const override;
     int compile_shader(Shader* shader) const override;
+    int register_shader(Shader* shader) const override;
 
   protected:
 
     int initialize() override;
     int terminate() override;
-    int tick(const Context context) override;
 
     int setup_instance();
     int setup_physical_device();
@@ -88,6 +93,8 @@ namespace me {
     int setup_swapchain();
     int setup_pipeline_layout();
     int setup_render_pass();
+    int setup_shaders();
+    int setup_graphics_pipeline();
 
     int setup_viewports();
     int setup_rasterizer();
@@ -117,9 +124,9 @@ namespace me {
 
     static int get_extension_names(uint32_t extension_count, const VkExtensionProperties* extensions, const char** extension_names);
     static int get_surface_extent(const VkExtent2D max_extent, const VkExtent2D min_extent, VkExtent2D &extent);
+    static int get_shader_stage_flag(const ShaderType, VkShaderStageFlagBits&);
 
     static int get_logical_device_queue_create_info(const uint32_t family_index, const uint32_t queue_count, const float* queue_priorities, VkDeviceQueueCreateInfo&);
-
 
   };
 

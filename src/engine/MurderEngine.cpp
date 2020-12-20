@@ -39,7 +39,7 @@ int me::MurderEngine::initialize_loop()
       }catch (const exception &e)
       {
 	print_module_exception(*module, e);
-	return 1;
+	terminate();
       }
     }
   }
@@ -50,6 +50,7 @@ int me::MurderEngine::terminate()
 {
   running = false;
   printf("terminating...\n");
+  abort();
   return 0;
 }
 
@@ -62,7 +63,7 @@ int me::MurderEngine::load_module(Module* module)
   }catch (const exception &e)
   {
     print_module_exception(*module, e);
-    return 1;
+    terminate();
   }
 
   logger.debug("loaded %s module '%s'", Module::type_name(module->get_type()), module->get_name().c_str());

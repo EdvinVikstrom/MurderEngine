@@ -2,10 +2,26 @@
   #define ME_VULKAN_UTIL_HPP
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #define ENUMSTR(i, e) if (e == i) return #e;
 static inline const char* vk_utils_result_string(const VkResult result)
 {
+  ENUMSTR(result, VK_SUCCESS);
+  ENUMSTR(result, VK_NOT_READY);
+  ENUMSTR(result, VK_TIMEOUT);
+  ENUMSTR(result, VK_EVENT_SET);
+  ENUMSTR(result, VK_EVENT_RESET);
+  ENUMSTR(result, VK_INCOMPLETE);
+
+  ENUMSTR(result, VK_SUBOPTIMAL_KHR);
+
+  ENUMSTR(result, VK_THREAD_IDLE_KHR);
+  ENUMSTR(result, VK_THREAD_DONE_KHR);
+  ENUMSTR(result, VK_OPERATION_DEFERRED_KHR);
+  ENUMSTR(result, VK_OPERATION_NOT_DEFERRED_KHR);
+  ENUMSTR(result, VK_PIPELINE_COMPILE_REQUIRED_EXT);
+
   ENUMSTR(result, VK_ERROR_OUT_OF_HOST_MEMORY)
   ENUMSTR(result, VK_ERROR_OUT_OF_DEVICE_MEMORY)
   ENUMSTR(result, VK_ERROR_INITIALIZATION_FAILED)
@@ -31,7 +47,7 @@ static inline const char* vk_utils_result_string(const VkResult result)
   ENUMSTR(result, VK_ERROR_INVALID_OPAQUE_CAPTURE_ADDRESS)
   ENUMSTR(result, VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
   ENUMSTR(result, VK_ERROR_UNKNOWN)
-  return nullptr;
+  return "UNKNOWN_RESULT";
 }
 
 static inline const char* vk_utils_queue_flag_string(const VkQueueFlagBits queue_flag)
