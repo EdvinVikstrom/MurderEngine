@@ -11,8 +11,8 @@ namespace me {
 
   public:
 
-    explicit AudioSystem(const MurderEngine* engine, const string &name)
-      : Module(engine, Module::AUDIO, name)
+    explicit AudioSystem(const string &name)
+      : Module(MODULE_AUDIO_TYPE, name)
     {
     }
 

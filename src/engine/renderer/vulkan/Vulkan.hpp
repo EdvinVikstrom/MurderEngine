@@ -5,7 +5,7 @@
 
 #include "../Renderer.hpp"
 #include "../../surface/VulkanSurface.hpp"
-#include "../../memory/MemoryPool.hpp"
+#include "../../Logger.hpp"
 
 #include <vulkan/vulkan.h>
 
@@ -25,26 +25,35 @@ namespace me {
     struct InstanceInfo;
     struct PhysicalDeviceInfo;
     struct LogicalDeviceInfo;
-    struct CommandPoolInfo;
+    struct QueueInfo;
     struct SurfaceInfo;
     struct SwapchainInfo;
     struct RenderPassInfo;
     struct PipelineLayoutInfo;
     struct GraphicsPipelineInfo;
+    struct FramebufferInfo;
+    struct CommandPoolInfo;
+    struct SynchronizationInfo;
     struct ViewportInfo;
     struct RasterizerInfo;
     struct MultisamplingInfo;
     struct ColorBlendInfo;
     struct DynamicInfo;
     struct ShaderInfo;
+    struct ShadersInfo;
+    struct RenderInfo;
     struct Storage;
     struct Temp;
+
+#ifndef NDEBUG
+    struct DebugInfo;
+#endif
 
 #include "Structs.hpp"
 
   protected:
 
-    Logger* logger;
+    Logger logger;
 
     VulkanAlloc alloc;
 
@@ -52,18 +61,26 @@ namespace me {
     mutable Temp temp;
 
     const VulkanSurface &me_surface;
-    vector<RenderLayer*> layers;
+    vector<const char*> required_extensions;
+    vector<const char*> required_layers;
+
     vector<const char*> required_device_extensions;
+    vector<const char*> required_device_layers;
+    vector<VkQueueFlags> required_queue_family_properties;
 
     InstanceInfo instance_info;
     PhysicalDeviceInfo physical_device_info;
     LogicalDeviceInfo logical_device_info;
-    CommandPoolInfo command_pool_info;
+    QueueInfo queue_info;
     SurfaceInfo surface_info;
     SwapchainInfo swapchain_info;
     RenderPassInfo render_pass_info;
     PipelineLayoutInfo pipeline_layout_info;
     GraphicsPipelineInfo graphics_pipeline_info;
+    FramebufferInfo framebuffer_info;
+    CommandPoolInfo command_pool_info;
+    VkArray<VkCommandBuffer> command_buffers;
+    SynchronizationInfo synchronization_info;
 
     ViewportInfo viewport_info;
     RasterizerInfo rasterizer_info;
@@ -72,29 +89,46 @@ namespace me {
     DynamicInfo dynamic_info;
     ShaderInfo shader_info;
 
+#ifndef NDEBUG
+    DebugInfo debug_info;
+#endif
+
+    RenderInfo render_info;
+    const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
   public:
 
-    explicit Vulkan(const MurderEngine* engine, const VulkanSurface &me_surface);
+    explicit Vulkan(const VulkanSurface &me_surface);
 
-    int queue_shader(Shader* shader) const override;
-    int compile_shader(Shader* shader) const override;
-    int register_shader(Shader* shader) const override;
+    int register_shader(Shader* shader) override;
 
   protected:
 
-    int initialize() override;
-    int terminate() override;
+    int initialize(const ModuleInfo module_info) override;
+    int terminate(const ModuleInfo module_info) override;
+    int tick(const ModuleInfo module_info) override;
 
-    int setup_instance();
+    int render(RenderInfo &render_info);
+
+    int setup_extensions();
+    int setup_layers();
+    int setup_device_extensions();
+    int setup_device_layers();
+    int setup_instance(const EngineInfo* engine_info);
     int setup_physical_device();
     int setup_logical_device();
-    int setup_command_pool();
     int setup_surface();
     int setup_swapchain();
     int setup_pipeline_layout();
     int setup_render_pass();
     int setup_shaders();
     int setup_graphics_pipeline();
+    int setup_framebuffers();
+    int setup_command_pool();
+    int setup_command_buffers();
+    int setup_synchronization();
+
+    int start_render_pass(VkCommandBuffer command_buffer, VkFramebuffer framebuffer);
 
     int setup_viewports();
     int setup_rasterizer();
@@ -104,12 +138,7 @@ namespace me {
 
     int get_physical_device_infos(uint32_t &physical_device_count, VkPhysicalDevice*, PhysicalDeviceInfo*);
 
-    /* physical device */
-    static int get_physical_device_queue_family(const VkPhysicalDevice, QueueFamilyIndices&);
-    static int get_physical_device_features(const VkPhysicalDevice, VkPhysicalDeviceFeatures&);
-    static int get_physical_device_extensions(const VkPhysicalDevice, uint32_t &extension_count, VkExtensionProperties*);
-    static int get_physical_device_properties(const VkPhysicalDevice, VkPhysicalDeviceProperties&);
-    static int get_physical_devices(const VkInstance, uint32_t &physical_device_count, VkPhysicalDevice*);
+    int create_shader_module(const Shader*);
 
     /* surface */
     static int get_surface_formats(const VkPhysicalDevice, const VkSurfaceKHR, uint32_t &count, VkSurfaceFormatKHR*);
@@ -117,16 +146,33 @@ namespace me {
     static int get_surface_capabilities(const VkPhysicalDevice, const VkSurfaceKHR, VkSurfaceCapabilitiesKHR&);
 
 
-    static bool has_required_extensions(const PhysicalDeviceInfo&, const vector<const char*> &required_extensions);
+    static bool has_extensions(const uint32_t extension_property_count, const VkExtensionProperties*, const vector<const char*> &required_extensions);
+    static bool has_layers(const uint32_t layer_property_count, const VkLayerProperties*, const vector<const char*> &required_layers);
+    static bool has_queue_families(const uint32_t queue_family_property_count, const VkQueueFamilyProperties*, const vector<VkQueueFlags> &required_queue_family_properties);
     static bool has_present_mode(const uint32_t present_mode_count, const VkPresentModeKHR* present_modes, const VkPresentModeKHR present_mode);
 
     static int find_surface_format(const VkFormat color_format, const VkColorSpaceKHR color_space, const uint32_t format_count, const VkSurfaceFormatKHR*, VkSurfaceFormatKHR&);
+    static int find_queue_families(const VkPhysicalDevice, const VkSurfaceKHR, const uint32_t queue_family_property_count, const VkQueueFamilyProperties*, QueueFamilyIndices&);
 
-    static int get_extension_names(uint32_t extension_count, const VkExtensionProperties* extensions, const char** extension_names);
-    static int get_surface_extent(const VkExtent2D max_extent, const VkExtent2D min_extent, VkExtent2D &extent);
+    static int get_extent(const VkExtent2D max_extent, const VkExtent2D min_extent, VkExtent2D &extent);
     static int get_shader_stage_flag(const ShaderType, VkShaderStageFlagBits&);
 
     static int get_logical_device_queue_create_info(const uint32_t family_index, const uint32_t queue_count, const float* queue_priorities, VkDeviceQueueCreateInfo&);
+
+  protected:
+
+#ifndef NDEBUG
+    int setup_debug_messenger();
+    int setup_debug_report();
+
+    int terminate_debug_messenger();
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT,
+	uint64_t object, size_t location, int32_t message_code,
+	const char* layer_prefix, const char* message, void* user_data);
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
+	const VkDebugUtilsMessengerCallbackDataEXT*, void* user_data);
+#endif
 
   };
 

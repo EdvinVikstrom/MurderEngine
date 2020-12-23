@@ -3,6 +3,8 @@
 
 #include "../AudioSystem.hpp"
 
+#include "../../Logger.hpp"
+
 #include <portaudio.h>
 
 namespace me {
@@ -11,17 +13,17 @@ namespace me {
 
   private:
 
-    Logger* logger;
+    Logger logger;
 
     PaStream* stream;
 
   public:
 
-    explicit PortAudio(const MurderEngine* engine);
+    explicit PortAudio();
 
-    int initialize() override;
-    int terminate() override;
-    int tick(const Context context) override;
+    int initialize(const ModuleInfo) override;
+    int terminate(const ModuleInfo) override;
+    int tick(const ModuleInfo) override;
 
   protected:
 

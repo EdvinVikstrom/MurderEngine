@@ -26,7 +26,7 @@ static me::ShaderType get_shader_type(const me::string_view &str)
   return me::SHADER_VERTEX;
 }
 
-int me::format::shader_read(const string &source, const Buffer &buffer, Shader_Result &result)
+int me::format::shader_read(const string &source, const Buffer &buffer, const ShaderType shader_type, Shader_Result &result)
 {
   const size_t data_length = buffer.seek_end();
   const char* data = buffer.pull_all();
@@ -34,6 +34,6 @@ int me::format::shader_read(const string &source, const Buffer &buffer, Shader_R
   Shader::Config shader_config = {
     .entry_point = "main"
   };
-  result.shaders.push_back(new Shader(source, SHADER_VERTEX, data_length, data, shader_config));
+  result.shaders.push_back(new Shader(source, shader_type, data_length, data, shader_config));
   return 0;
 }

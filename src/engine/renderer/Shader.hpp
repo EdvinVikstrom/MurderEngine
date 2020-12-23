@@ -17,7 +17,7 @@ namespace me {
   public:
 
     struct Config {
-      string entry_point;
+      const char* entry_point;
     };
 
   public:

@@ -1,12 +1,13 @@
 #include "VKWindowSurface.hpp"
+#include "GLFW/glfw3.h"
 #include "VKWindowSurface.hpp"
 
 #include "../../util/vk_utils.hpp"
 
 #include <lme/time.hpp>
 
-me::VKWindowSurface::VKWindowSurface(const MurderEngine* engine, Config config)
-  : VulkanSurface(engine, "glfw", config)
+me::VKWindowSurface::VKWindowSurface()
+  : VulkanSurface("glfw"), logger("VK-Window")
 {
 }
 
@@ -19,36 +20,34 @@ int me::VKWindowSurface::create_surface(VkInstance instance, const VkAllocationC
   return 0;
 }
 
-int me::VKWindowSurface::initialize()
+int me::VKWindowSurface::initialize(const ModuleInfo module_info)
 {
-  /* make a logger for GLFW */
-  logger = engine->get_logger().child("Vulkan-Window");
-
   if (!glfwInit())
     throw exception("failed to initialize GLFW");
 
   uint32_t width = 1550, height = 770;
-  const char* title = engine->get_app_config().name;
+  const char* title = "title";
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfw_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+  glfwSwapInterval(1);
   return 0;
 }
 
-int me::VKWindowSurface::terminate()
+int me::VKWindowSurface::terminate(const ModuleInfo module_info)
 {
   glfwDestroyWindow(glfw_window);
   glfwTerminate();
   return 0;
 }
 
-int me::VKWindowSurface::tick(const Context context)
+int me::VKWindowSurface::tick(const ModuleInfo module_info)
 {
   if (glfwWindowShouldClose(glfw_window))
+  {
+    module_info.semaphore->flags |= MODULE_SEMAPHORE_TERMINATE_FLAG;
     return 1;
-
-  for (RenderLayer* layer : layers)
-    layer->render(false);
+  }
 
   glfwPollEvents();
   return 0;
@@ -69,8 +68,7 @@ int me::VKWindowSurface::get_size(uint32_t &width, uint32_t &height) const
   return 0;
 }
 
-int me::VKWindowSurface::register_layer(RenderLayer* layer) const
+size_t me::VKWindowSurface::get_current_frame_index() const
 {
-  layers.push_back(layer);
-  return 0;
+  return frame_index;
 }

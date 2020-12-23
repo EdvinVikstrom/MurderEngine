@@ -3,14 +3,16 @@
 
 #include "Vulkan.hpp"
 
-bool me::Vulkan::has_required_extensions(const PhysicalDeviceInfo &physical_device_info, const vector<const char*> &required_extensions)
+bool me::Vulkan::has_extensions(const uint32_t extension_property_count,
+    const VkExtensionProperties* extension_properties,
+    const vector<const char*> &required_extensions)
 {
   for (const char* required_extension : required_extensions)
   {
     bool has_extension = false;
-    for (uint32_t i = 0; i < physical_device_info.extensions.count; i++)
+    for (uint32_t i = 0; i < extension_property_count; i++)
     {
-      if (strcmp(physical_device_info.extensions[i].extensionName, required_extension))
+      if (strcmp(required_extension, extension_properties[i].extensionName))
       {
 	has_extension = true;
 	break;
@@ -18,6 +20,50 @@ bool me::Vulkan::has_required_extensions(const PhysicalDeviceInfo &physical_devi
     }
 
     if (!has_extension)
+      return false;
+  }
+  return true;
+}
+
+bool me::Vulkan::has_layers(const uint32_t layer_property_count,
+    const VkLayerProperties* layer_properties,
+    const vector<const char*> &required_layers)
+{
+  for (const char* required : required_layers)
+  {
+    bool found = false;
+    for (uint32_t i = 0; i < layer_property_count; i++)
+    {
+      if (strcmp(required, layer_properties[i].layerName) == 0)
+      {
+	found = true;
+	break;
+      }
+    }
+
+    if (!found)
+      return false;
+  }
+  return true;
+}
+
+bool me::Vulkan::has_queue_families(const uint32_t queue_family_property_count,
+    const VkQueueFamilyProperties* queue_family_properties,
+    const vector<VkQueueFlags> &required_queue_family_properties)
+{
+  for (const uint32_t required : required_queue_family_properties)
+  {
+    bool found = false;
+    for (uint32_t i = 0; i < queue_family_property_count; i++)
+    {
+      if ((queue_family_properties[i].queueFlags & required) == required)
+      {
+	found = true;
+	break;
+      }
+    }
+
+    if (!found)
       return false;
   }
   return true;
@@ -61,16 +107,30 @@ int me::Vulkan::find_surface_format(const VkFormat color_format,
   return 0;
 }
 
-int me::Vulkan::get_extension_names(uint32_t extension_count,
-    const VkExtensionProperties* extensions,
-    const char** extension_names)
+int me::Vulkan::find_queue_families(const VkPhysicalDevice physical_device,
+    const VkSurfaceKHR surface,
+    const uint32_t queue_family_property_count,
+    const VkQueueFamilyProperties* queue_family_properties,
+    QueueFamilyIndices& queue_family_indices)
 {
-  for (uint32_t i = 0; i < extension_count; i++)
-    extension_names[i] = extensions[i].extensionName;
+
+  for (uint32_t i = 0; i < queue_family_property_count; i++)
+  {
+    if (queue_family_properties[i].queueCount > 0)
+    {
+      if (queue_family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+	queue_family_indices.graphics.assign(i);
+
+      VkBool32 present_support = VK_FALSE;
+      vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, &present_support);
+      if (present_support)
+	queue_family_indices.present.assign(i);
+    }
+  }
   return 0;
 }
 
-int me::Vulkan::get_surface_extent(const VkExtent2D max_extent,
+int me::Vulkan::get_extent(const VkExtent2D max_extent,
     const VkExtent2D min_extent,
     VkExtent2D &extent)
 {
@@ -80,7 +140,7 @@ int me::Vulkan::get_surface_extent(const VkExtent2D max_extent,
 
   /* if extent.width/height is less than min image width/height; set the extent.width/height to min image width/height */
   extent.width = math::max(extent.width, min_extent.width);
-  extent.width = math::max(extent.height, min_extent.height);
+  extent.height = math::max(extent.height, min_extent.height);
  
   return 0;
 }
@@ -110,6 +170,7 @@ int me::Vulkan::get_logical_device_queue_create_info(const uint32_t family_index
 {
   device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
   device_create_info.pNext = nullptr;
+  device_create_info.flags = 0;
   device_create_info.queueFamilyIndex = family_index;
   device_create_info.queueCount = queue_count;
   device_create_info.pQueuePriorities = queue_priorities;

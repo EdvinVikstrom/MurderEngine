@@ -1,4 +1,5 @@
 #include "engine/MurderEngine.hpp"
+#include "engine/renderer/Shader.hpp"
 #include "engine/surface/VulkanSurface.hpp"
 #include "engine/surface/window/VKWindowSurface.hpp"
 #include "engine/renderer/vulkan/Vulkan.hpp"
@@ -12,85 +13,71 @@ class Sandbox : public me::Module {
 
 public:
 
-  me::VulkanSurface* surface;
-  me::Renderer* renderer;
-  me::AudioSystem* audio_system;
-
-public:
-
-  Sandbox(const me::MurderEngine* engine)
-    : Module(engine, me::Module::OTHER, "sandbox")
+  Sandbox()
+    : Module(me::MODULE_OTHER_TYPE, "sandbox")
   {
   }
 
 protected:
 
-  int initialize() override;
-  int terminate() override;
-  int tick(const Context context) override;
+  int initialize(const me::ModuleInfo) override;
+  int terminate(const me::ModuleInfo) override;
+  int tick(const me::ModuleInfo) override;
 
 };
 
 int main(int argc, char** argv)
 {
-  me::AppConfig app_config = {
+  me::Module* modules[3];
+  modules[0] = new Sandbox();
+  modules[1] = new me::VKWindowSurface();
+  modules[2] = new me::Vulkan(*(((me::VulkanSurface*) modules[1])));
+
+  me::ApplicationInfo app_info = {
     .name = "Sandbox",
     .version = 1
   };
 
-  me::MurderEngine engine(app_config);
+  me::EngineInfo engine_info = {
+    .application_info = app_info,
+    .module_count = 3,
+    .modules = modules
+  };
+
+  me::MurderEngine engine(engine_info);
   engine.initialize(argc, argv);
-
-  Sandbox* sandbox = new Sandbox(&engine);
-  sandbox->surface = new me::VKWindowSurface(&engine, { .fps = 24 });
-  sandbox->renderer = new me::Vulkan(&engine, *sandbox->surface);
-  sandbox->audio_system = new me::PortAudio(&engine);
-
-  engine.load_module(sandbox);
-  engine.load_module(sandbox->surface);
-  engine.load_module(sandbox->renderer);
-  engine.load_module(sandbox->audio_system);
-
-
-  engine.initialize_loop();
   return engine.terminate();
 }
 
 
-int Sandbox::initialize()
+int Sandbox::initialize(const me::ModuleInfo module_info)
 {
-  size_t size;
-  char* data;
+  me::Renderer* renderer = module_info.engine_bus->get_active_renderer_module();
 
-  me::File vertex_shader_file("src/res/shader_test.vert");
-  me::File fragment_shader_file("src/res/shader_test.frag");
-  me::File::read(vertex_shader_file, size, data);
-  me::File::read(fragment_shader_file, size, data);
+  size_t vert_size, frag_size;
+  char *vert_data, *frag_data;
 
-  me::ByteBuffer vertex_buffer(size, data);
-  me::format::Shader_Result vertex_result;
-  me::format::shader_read(vertex_shader_file.get_path(), vertex_buffer, vertex_result);
+  me::File vertex_shader_file("src/res/vert.spv");
+  me::File fragment_shader_file("src/res/frag.spv");
 
-  me::ByteBuffer fragment_buffer(size, data);
-  me::format::Shader_Result fragment_result;
-  me::format::shader_read(fragment_shader_file.get_path(), fragment_buffer, fragment_result);
+  me::File::read(vertex_shader_file, vert_size, vert_data);
+  me::File::read(fragment_shader_file, frag_size, frag_data);
 
+  me::Shader* vertex_shader = new me::Shader("vertex", me::SHADER_VERTEX, vert_size, vert_data, { .entry_point = "main" });
+  me::Shader* fragment_shader = new me::Shader("fragment", me::SHADER_FRAGMENT, frag_size, frag_data, { .entry_point = "main" });
 
-  me::Shader* vertex_shader = vertex_result.shaders.at(0);
-  me::Shader* fragment_shader = fragment_result.shaders.at(0);
-
-  renderer->queue_shader(vertex_shader);
-  renderer->queue_shader(fragment_shader);
+  renderer->register_shader(vertex_shader);
+  renderer->register_shader(fragment_shader);
 
   return 0;
 }
 
-int Sandbox::terminate()
+int Sandbox::terminate(const me::ModuleInfo module_info)
 {
   return 0;
 }
 
-int Sandbox::tick(const Context context)
+int Sandbox::tick(const me::ModuleInfo module_info)
 {
   return 0;
 }

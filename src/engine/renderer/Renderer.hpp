@@ -13,14 +13,12 @@ namespace me {
 
   public:
 
-    Renderer(const MurderEngine* engine, const string &name)
-      : Module(engine, Module::RENDERER, name)
+    Renderer(const string &name)
+      : Module(MODULE_RENDERER_TYPE, name)
     {
     }
 
-    virtual int queue_shader(Shader* shader) const = 0;
-    virtual int compile_shader(Shader* shader) const = 0;
-    virtual int register_shader(Shader* shader) const = 0;
+    virtual int register_shader(Shader* shader) = 0;
 
   };
 

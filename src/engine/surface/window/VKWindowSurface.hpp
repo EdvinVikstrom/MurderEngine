@@ -3,6 +3,8 @@
 
 #include "../VulkanSurface.hpp"
 
+#include "../../Logger.hpp"
+
 #include <GLFW/glfw3.h>
 
 namespace me {
@@ -11,30 +13,26 @@ namespace me {
 
   private:
 
-    Logger* logger;
+    Logger logger;
 
     GLFWwindow* glfw_window;
-
-  protected:
-
-    mutable vector<RenderLayer*> layers;
+    size_t frame_index;
 
   public:
 
-    VKWindowSurface(const MurderEngine* engine, Config config);
+    VKWindowSurface();
 
     int get_size(uint32_t &width, uint32_t &height) const override;
-
-    int register_layer(RenderLayer* layer) const override;
+    size_t get_current_frame_index() const override;
 
     const char** get_extensions(uint32_t &count) const override;
     int create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const override;
 
   protected:
 
-    int initialize() override;
-    int terminate() override;
-    int tick(const Context context) override;
+    int initialize(const ModuleInfo) override;
+    int terminate(const ModuleInfo) override;
+    int tick(const ModuleInfo) override;
 
   };
 

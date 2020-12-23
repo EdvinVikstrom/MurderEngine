@@ -34,8 +34,6 @@ namespace me {
     void trace(Trace trace, bool value);
     void trace_all();
 
-    Logger* child(const char* name) const;
-
   };
 
 }

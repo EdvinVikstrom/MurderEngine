@@ -11,8 +11,8 @@ namespace me {
 
   public:
 
-    VulkanSurface(const MurderEngine* engine, const string &name, Config config)
-      : Surface(engine, name, config)
+    VulkanSurface(const string &name)
+      : Surface(name)
     {
     }
 

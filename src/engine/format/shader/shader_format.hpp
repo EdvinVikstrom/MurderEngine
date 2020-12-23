@@ -14,7 +14,7 @@ namespace me::format {
   };
 
 
-  int shader_read(const string &source, const Buffer &buffer, Shader_Result &result);
+  int shader_read(const string &source, const Buffer &buffer, const ShaderType shader_type, Shader_Result &result);
 
 }
 

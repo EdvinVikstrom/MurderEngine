@@ -2,16 +2,14 @@
 
 #include <portaudio.h>
 
-me::PortAudio::PortAudio(const MurderEngine* engine)
-  : AudioSystem(engine, "portaudio")
+me::PortAudio::PortAudio()
+  : AudioSystem("portaudio"), logger("PortAudio")
 {
 }
 
-int me::PortAudio::initialize()
+int me::PortAudio::initialize(const ModuleInfo module_info)
 {
-  logger = engine->get_logger().child("PortAudio");
-
-  logger->info("using version [%s]", Pa_GetVersionText());
+  logger.info("using version [%s]", Pa_GetVersionText());
 
 
   PaError error = Pa_Initialize();
@@ -30,7 +28,7 @@ int me::PortAudio::initialize()
   return 0;
 }
 
-int me::PortAudio::terminate()
+int me::PortAudio::terminate(const ModuleInfo module_info)
 {
   PaError error = Pa_AbortStream(stream);
   if (error != paNoError)
@@ -48,7 +46,7 @@ int me::PortAudio::terminate()
   return 0;
 }
 
-int me::PortAudio::tick(const Context context)
+int me::PortAudio::tick(const ModuleInfo module_info)
 {
   return 0;
 }

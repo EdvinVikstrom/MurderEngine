@@ -60,6 +60,36 @@ static inline const char* vk_utils_queue_flag_string(const VkQueueFlagBits queue
   return nullptr;
 }
 
+static inline const char* vk_utils_shader_stage_flag_bit(const VkShaderStageFlagBits shader_stage_flag_bits)
+{
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_VERTEX_BIT);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_GEOMETRY_BIT);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_FRAGMENT_BIT);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_COMPUTE_BIT);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_ALL_GRAPHICS);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_ALL);
+
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_ANY_HIT_BIT_KHR);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_MISS_BIT_KHR);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_INTERSECTION_BIT_KHR);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_CALLABLE_BIT_KHR);
+
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_TASK_BIT_NV);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_MESH_BIT_NV);
+
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_RAYGEN_BIT_NV);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_ANY_HIT_BIT_NV);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_CLOSEST_HIT_BIT_NV);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_MISS_BIT_NV);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_INTERSECTION_BIT_NV);
+  ENUMSTR(shader_stage_flag_bits, VK_SHADER_STAGE_CALLABLE_BIT_NV);
+  return "UNKNOWN_SHADER_STAGE_BIT";
+}
+
 #undef ENUMSTR
 
 #endif

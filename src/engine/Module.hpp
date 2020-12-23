@@ -1,43 +1,53 @@
 #ifndef ME_MODULE_HPP
   #define ME_MODULE_HPP
 
-#include "MurderEngine.hpp"
+#include "util/Semaphore.hpp"
+#include "EngineBus.hpp"
+#include "EngineInfo.hpp"
 
 #include <lme/string.hpp>
 
 namespace me {
 
+  enum ModuleTypes {
+    MODULE_SURFACE_TYPE,
+    MODULE_RENDERER_TYPE,
+    MODULE_AUDIO_TYPE,
+    MODULE_IO_TYPE,
+    MODULE_OTHER_TYPE
+  };
+
+  enum ModuleSemaphoreFlags {
+    MODULE_SEMAPHORE_TERMINATE_FLAG = 1
+  };
+
+
+  struct ModuleInfo {
+    mutable Semaphore* semaphore;
+    const EngineBus* engine_bus;
+    const EngineInfo* engine_info;
+  };
+
+
   class Module {
-
-    friend MurderEngine;
-
-  public:
-
-    enum Type {
-      SURFACE, RENDERER, AUDIO, IO, OTHER
-    };
-
-    struct Context {
-      size_t current_tick;
-      size_t current_time;
-    };
 
   protected:
 
-    const MurderEngine* engine;
-    const Type type;
+    friend class MurderEngine;
+
+    const ModuleTypes module_type;
     const string name;
 
   public:
 
-    Module(const MurderEngine* engine, const Type type, const string &name)
-      : engine(engine), type(type), name(name)
+    Module(const ModuleTypes module_type, const string &name)
+      : module_type(module_type), name(name)
     {
     }
 
-    const Type get_type() const
+    const ModuleTypes get_type() const
     {
-      return type;
+      return module_type;
     }
 
     const string& get_name() const
@@ -46,26 +56,27 @@ namespace me {
     }
 
 
-    static inline const char* type_name(const Type type)
-    {
-      switch (type)
-      {
-	case RENDERER: return "RENDERER";
-	case AUDIO: return "AUDIO";
-	case SURFACE: return "SURFACE";
-	case IO: return "IO";
-	case OTHER: return "OTHER";
-	default: return "";
-      }
-    }
-
   protected:
 
-    virtual int initialize() = 0;
-    virtual int terminate() = 0;
-    virtual int tick(const Context context) { return 0; };
+    virtual int initialize(const ModuleInfo) = 0;
+    virtual int terminate(const ModuleInfo) = 0;
+    virtual int tick(const ModuleInfo) = 0;
 
   };
+
+
+  static inline const char* module_type_name(const ModuleTypes type)
+  {
+    switch (type)
+    {
+      case MODULE_RENDERER_TYPE: return "RENDERER";
+      case MODULE_AUDIO_TYPE: return "AUDIO";
+      case MODULE_SURFACE_TYPE: return "SURFACE";
+      case MODULE_IO_TYPE: return "IO";
+      case MODULE_OTHER_TYPE: return "OTHER";
+      default: return "";
+    }
+  }
 
 }
 

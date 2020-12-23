@@ -67,8 +67,3 @@ void me::Logger::trace_all()
   tracing |= INFO;
   tracing |= DEBUG;
 }
-
-me::Logger* me::Logger::child(const char* name) const
-{
-  return new Logger(name, tracing, this);
-}

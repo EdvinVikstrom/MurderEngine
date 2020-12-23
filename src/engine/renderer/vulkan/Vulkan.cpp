@@ -7,43 +7,62 @@
 #include <lme/map.hpp>
 #include <lme/math/math.hpp>
 #include <lme/string.hpp>
+#include <lme/set.hpp>
 #include <vulkan/vulkan_core.h>
 
-me::Vulkan::Vulkan(const MurderEngine* engine, const VulkanSurface &me_surface)
-  : Renderer(engine, "vulkan"), me_surface(me_surface)
+me::Vulkan::Vulkan(const VulkanSurface &me_surface)
+  : Renderer("vulkan"), me_surface(me_surface), logger("Vulkan")
 {
 }
 
-int me::Vulkan::initialize()
+int me::Vulkan::initialize(const ModuleInfo module_info)
 {
-  /* make a logger */
-  logger = engine->get_logger().child("Vulkan");
-  required_device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-
-  setup_instance();
+  setup_extensions();
+  setup_layers();
+  setup_instance(module_info.engine_info);
+#ifndef NDEBUG
+  setup_debug_messenger();
+  setup_debug_report();
+#endif
+  me_surface.create_surface(instance_info.instance, nullptr, &surface_info.surface);
+  setup_device_extensions();
+  setup_device_layers();
   setup_physical_device();
   setup_logical_device();
-  setup_command_pool();
   setup_surface();
   setup_swapchain();
-  setup_pipeline_layout();
   setup_render_pass();
   setup_shaders();
+  setup_pipeline_layout();
   setup_graphics_pipeline();
-
-  setup_viewports();
-  setup_rasterizer();
-  setup_multisampling();
-  setup_color_blend();
-  setup_dynamic();
+  setup_framebuffers();
+  setup_command_pool();
+  setup_command_buffers();
+  setup_synchronization();
 
   return 0;
 }
 
-int me::Vulkan::terminate()
+int me::Vulkan::terminate(const ModuleInfo module_info)
 {
+  vkDeviceWaitIdle(logical_device_info.device);
+
+#ifndef NDEBUG
+  terminate_debug_messenger();
+#endif
+
+  for (uint32_t i = 0; i < framebuffer_info.framebuffers.count; i++)
+    vkDestroyFramebuffer(logical_device_info.device, framebuffer_info.framebuffers[i], nullptr);
   for (uint32_t i = 0; i < swapchain_info.image_views.count; i++)
     vkDestroyImageView(logical_device_info.device, swapchain_info.image_views[i], nullptr);
+
+  /* destroy synchronization stuff */
+  for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+  {
+    vkDestroySemaphore(logical_device_info.device, synchronization_info.image_available[i], nullptr);
+    vkDestroySemaphore(logical_device_info.device, synchronization_info.render_finished[i], nullptr);
+    vkDestroyFence(logical_device_info.device, synchronization_info.in_flight[i], nullptr);
+  }
 
   vkDestroyPipeline(logical_device_info.device, graphics_pipeline_info.pipeline, nullptr);
   vkDestroyPipelineLayout(logical_device_info.device, pipeline_layout_info.pipeline_layout, nullptr);
@@ -56,32 +75,174 @@ int me::Vulkan::terminate()
   return 0;
 }
 
-
-int me::Vulkan::setup_instance()
+int me::Vulkan::tick(const ModuleInfo module_info)
 {
-  uint32_t extension_count;
-  const char** extensions = me_surface.get_extensions(extension_count);
+  render(render_info);
+  return 0;
+}
 
-  AppConfig app_config = engine->get_app_config();
+
+int me::Vulkan::render(RenderInfo &render_info)
+{
+  vkWaitForFences(logical_device_info.device, 1, &synchronization_info.in_flight[render_info.frame_index], VK_TRUE, UINT64_MAX);
+
+  uint32_t image_index;
+  vkAcquireNextImageKHR(logical_device_info.device, swapchain_info.swapchain, UINT64_MAX,
+      synchronization_info.image_available[render_info.frame_index], VK_NULL_HANDLE, &image_index);
+
+  if (synchronization_info.images_in_flight[image_index] != VK_NULL_HANDLE)
+    vkWaitForFences(logical_device_info.device, 1, &synchronization_info.images_in_flight[image_index], VK_TRUE, UINT64_MAX);
+  synchronization_info.images_in_flight[image_index] = synchronization_info.in_flight[render_info.frame_index];
+
+
+  /* create wait semaphores */
+  uint32_t wait_semaphore_count = 1;
+  VkSemaphore wait_semaphores[wait_semaphore_count];
+  wait_semaphores[0] = synchronization_info.image_available[render_info.frame_index];
+
+  /* create wait stages */
+  uint32_t wait_stage_count = 1;
+  VkPipelineStageFlags wait_stages[wait_stage_count];
+  wait_stages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+  /* get command buffers */
+  uint32_t command_buffer_count = 1;
+  VkCommandBuffer command_buffers[command_buffer_count];
+  command_buffers[0] = this->command_buffers[image_index];
+
+  /* create signal semaphores */
+  uint32_t signal_semaphore_count = 1;
+  VkSemaphore signal_semaphores[signal_semaphore_count];
+  signal_semaphores[0] = synchronization_info.render_finished[render_info.frame_index];
+
+  /* create submit infos */
+  uint32_t submit_info_count = 1;
+  VkSubmitInfo submit_infos[submit_info_count];
+  submit_infos[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_infos[0].pNext = nullptr;
+  submit_infos[0].waitSemaphoreCount = wait_semaphore_count;
+  submit_infos[0].pWaitSemaphores = wait_semaphores;
+  submit_infos[0].pWaitDstStageMask = wait_stages;
+  submit_infos[0].commandBufferCount = command_buffer_count;
+  submit_infos[0].pCommandBuffers = command_buffers;
+  submit_infos[0].signalSemaphoreCount = signal_semaphore_count;
+  submit_infos[0].pSignalSemaphores = signal_semaphores;
+
+  vkResetFences(logical_device_info.device, 1, &synchronization_info.in_flight[render_info.frame_index]);
+
+  VkResult result = vkQueueSubmit(queue_info.graphics_queue, submit_info_count, submit_infos, synchronization_info.in_flight[render_info.frame_index]);
+  if (result != VK_SUCCESS)
+    throw exception("failed to queue submit [%s]", vk_utils_result_string(result));
+
+
+  /* get swapchains */
+  uint32_t swapchain_count = 1;
+  VkSwapchainKHR swapchains[swapchain_count];
+  swapchains[0] = swapchain_info.swapchain;
+
+  /* create present info */
+  VkPresentInfoKHR present_info = { };
+  present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+  present_info.pNext = nullptr;
+  present_info.waitSemaphoreCount = signal_semaphore_count;
+  present_info.pWaitSemaphores = signal_semaphores;
+  present_info.swapchainCount = swapchain_count;
+  present_info.pSwapchains = swapchains;
+  present_info.pImageIndices = &image_index;
+  present_info.pResults = nullptr;
+
+  vkQueuePresentKHR(queue_info.present_queue, &present_info);
+
+
+  /* increment the frame index and reset to 0 if equals MAX_FRAMES_IN_FLIGHT */
+  render_info.frame_index++;
+  if (render_info.frame_index == MAX_FRAMES_IN_FLIGHT)
+    render_info.frame_index = 0;
+  return 0;
+}
+
+
+int me::Vulkan::setup_extensions()
+{
+  logger.debug("> SETUP_EXTENSIONS");
+
+  /* instance extensions */
+#ifndef NDEBUG
+  required_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+  required_extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+#endif
+
+  uint32_t surface_extension_count;
+  const char** surface_extensions = me_surface.get_extensions(surface_extension_count);
+  for (uint32_t i = 0; i < surface_extension_count; i++)
+    required_extensions.push_back(surface_extensions[i]);
+
+  /* check if supported */
+  uint32_t extension_property_count;
+  vkEnumerateInstanceExtensionProperties(nullptr, &extension_property_count, nullptr);
+  VkExtensionProperties extension_properties[extension_property_count];
+  vkEnumerateInstanceExtensionProperties(nullptr, &extension_property_count, extension_properties);
+
+  if (!has_extensions(extension_property_count, extension_properties, required_extensions))
+    throw exception("required extensions not supported");
+  return 0;
+}
+
+int me::Vulkan::setup_layers()
+{
+  logger.debug("> SETUP_LAYERS");
+
+#ifndef NDEBUG
+  required_layers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+
+  /* check if supported */
+  uint32_t layer_property_count;
+  vkEnumerateInstanceLayerProperties(&layer_property_count, nullptr);
+  VkLayerProperties layer_properties[layer_property_count];
+  vkEnumerateInstanceLayerProperties(&layer_property_count, layer_properties);
+
+  if (!has_layers(layer_property_count, layer_properties, required_layers))
+    throw exception("required layers not supported");
+  return 0;
+}
+
+int me::Vulkan::setup_device_extensions()
+{
+  logger.debug("> SETUP_DEVICE_EXTENSIONS");
+
+  required_device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  return 0;
+}
+
+int me::Vulkan::setup_device_layers()
+{
+  logger.debug("> SETUP_DEVICE_LAYERS");
+
+  return 0;
+}
+
+int me::Vulkan::setup_instance(const EngineInfo* engine_info)
+{
+  logger.debug("> SETUP_INSTANCE");
 
   VkApplicationInfo application_info = { };
   application_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
   application_info.pNext = nullptr;
-  application_info.pApplicationName = app_config.name;
-  application_info.applicationVersion = app_config.version;
+  application_info.pApplicationName = engine_info->application_info.name;
+  application_info.applicationVersion = engine_info->application_info.version;
   application_info.pEngineName = ME_ENGINE_NAME;
-  application_info.engineVersion = VK_MAKE_VERSION(
-	ME_ENGINE_VERSION_MAJOR, ME_ENGINE_VERSION_MINOR, ME_ENGINE_VERSION_PATCH);
+  application_info.engineVersion = VK_MAKE_VERSION(ME_ENGINE_VERSION_MAJOR, ME_ENGINE_VERSION_MINOR, ME_ENGINE_VERSION_PATCH);
 
   VkInstanceCreateInfo instance_create_info = { };
   instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   instance_create_info.pNext = nullptr;
   instance_create_info.flags = 0;
   instance_create_info.pApplicationInfo = &application_info;
-  instance_create_info.enabledLayerCount = 0;
-  instance_create_info.ppEnabledLayerNames = nullptr;
-  instance_create_info.enabledExtensionCount = extension_count;
-  instance_create_info.ppEnabledExtensionNames = extensions;
+  instance_create_info.enabledLayerCount = (uint32_t) required_layers.size();
+  instance_create_info.ppEnabledLayerNames = required_layers.data();
+  instance_create_info.enabledExtensionCount = (uint32_t) required_extensions.size();
+  instance_create_info.ppEnabledExtensionNames = required_extensions.data();
 
   VkResult result = vkCreateInstance(&instance_create_info, nullptr, &instance_info.instance);
   if (result != VK_SUCCESS)
@@ -91,11 +252,13 @@ int me::Vulkan::setup_instance()
 
 int me::Vulkan::setup_physical_device()
 {
+  logger.debug("> SETUP_PHYSICAL_DEVICE");
+
   /* get physical devices */
   uint32_t physical_device_count;
-  get_physical_devices(instance_info.instance, physical_device_count, nullptr);
+  vkEnumeratePhysicalDevices(instance_info.instance, &physical_device_count, nullptr);
   VkPhysicalDevice physical_devices[physical_device_count];
-  get_physical_devices(instance_info.instance, physical_device_count, physical_devices);
+  vkEnumeratePhysicalDevices(instance_info.instance, &physical_device_count, physical_devices);
 
   /* get physical device infos */
   PhysicalDeviceInfo physical_device_infos[physical_device_count];
@@ -103,14 +266,18 @@ int me::Vulkan::setup_physical_device()
 
   for (const PhysicalDeviceInfo &physical_device_info : physical_device_infos)
   {
-    logger->debug("found device[%s]", physical_device_info.properties.deviceName);
+    logger.debug("found device[%s]", physical_device_info.properties.deviceName);
 
     /* check required extensions */
-    if (!has_required_extensions(physical_device_info, required_device_extensions))
+    if (!has_extensions(physical_device_info.extensions.count, physical_device_info.extensions.ptr, required_extensions))
+      continue;
+
+    /* check required layers */
+    if (!has_layers(physical_device_info.layers.count, physical_device_info.layers.ptr, required_device_layers))
       continue;
 
     /* check required queue family */
-    if (!physical_device_info.queue_family_indices.graphics.has())
+    if (!has_queue_families(physical_device_info.queue_family_properties.count, physical_device_info.queue_family_properties.ptr, required_queue_family_properties))
       continue;
 
     /* choose device */
@@ -122,58 +289,49 @@ int me::Vulkan::setup_physical_device()
 
 int me::Vulkan::setup_logical_device()
 {
+  logger.debug("> SETUP_LOGICAL_DEVICE");
+
+  /* get unique queue families */
+  uint32_t queue_families[2] = {
+    physical_device_info.queue_family_indices.graphics.value(),
+    physical_device_info.queue_family_indices.present.value()
+  };
+  set<uint32_t> unique_queue_families(2, queue_families);
+
   /* device queue create info(s) */
-  uint32_t device_queue_count = 1;
+  uint32_t device_queue_count = unique_queue_families.size();
   VkDeviceQueueCreateInfo device_queue_create_infos[device_queue_count];
 
   /* graphics queue */
-  uint32_t graphics_queue_index = physical_device_info.queue_family_indices.graphics.value();
   float queue_priorities[1] = {1.0F};
-  get_logical_device_queue_create_info(graphics_queue_index, 1, queue_priorities, device_queue_create_infos[0]);
+  for (uint32_t i = 0; i < device_queue_count; i++)
+    get_logical_device_queue_create_info(unique_queue_families.at(i), 1, queue_priorities, device_queue_create_infos[i]);
 
-
-  /* extension names */
-  uint32_t extension_count = physical_device_info.extensions.count;
-  const char* extension_names[extension_count];
-  get_extension_names(extension_count, physical_device_info.extensions.ptr, extension_names);
-
-
+  /* device create info */
   VkDeviceCreateInfo device_create_info = { };
   device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   device_create_info.pNext = nullptr;
   device_create_info.flags = 0;
   device_create_info.queueCreateInfoCount = device_queue_count;
   device_create_info.pQueueCreateInfos = device_queue_create_infos;
-  device_create_info.enabledLayerCount = 0;
-  device_create_info.ppEnabledLayerNames = nullptr;
-  device_create_info.enabledExtensionCount = extension_count;
-  device_create_info.ppEnabledExtensionNames = extension_names;
+  device_create_info.enabledLayerCount = (uint32_t) required_device_layers.size();
+  device_create_info.ppEnabledLayerNames = required_device_layers.data();
+  device_create_info.enabledExtensionCount = (uint32_t) required_device_extensions.size();
+  device_create_info.ppEnabledExtensionNames = required_device_extensions.data();
   device_create_info.pEnabledFeatures = &physical_device_info.features;
 
   VkResult result = vkCreateDevice(physical_device_info.device, &device_create_info, nullptr, &logical_device_info.device);
   if (result != VK_SUCCESS)
     throw exception("failed to create device [%s]", vk_utils_result_string(result));
-  return 0;
-}
 
-int me::Vulkan::setup_command_pool()
-{
-  VkCommandPoolCreateInfo command_pool_create_info = { };
-  command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  command_pool_create_info.pNext = nullptr;
-  command_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  command_pool_create_info.queueFamilyIndex = physical_device_info.queue_family_indices.graphics.value();
- 
-  VkResult result = vkCreateCommandPool(logical_device_info.device, &command_pool_create_info, nullptr, &command_pool_info.command_pool);
-  if (result != VK_SUCCESS)
-    throw exception("failed to create command pool [%s]", vk_utils_result_string(result));
+  vkGetDeviceQueue(logical_device_info.device, physical_device_info.queue_family_indices.graphics.value(), 0, &queue_info.graphics_queue);
+  vkGetDeviceQueue(logical_device_info.device, physical_device_info.queue_family_indices.present.value(), 0, &queue_info.present_queue);
   return 0;
 }
 
 int me::Vulkan::setup_surface()
 {
-  me_surface.create_surface(instance_info.instance, nullptr, &surface_info.surface);
-
+  logger.debug("> SETUP_SURFACE");
 
   /* get surface formats */
   uint32_t format_count;
@@ -203,12 +361,14 @@ int me::Vulkan::setup_surface()
 
   /* get the size of the surface */
   me_surface.get_size(surface_info.extent.width, surface_info.extent.height);
-  get_surface_extent(surface_info.capabilities.maxImageExtent, surface_info.capabilities.minImageExtent, surface_info.extent);
+  get_extent(surface_info.capabilities.maxImageExtent, surface_info.capabilities.minImageExtent, surface_info.extent);
   return 0;
 }
 
 int me::Vulkan::setup_swapchain()
 {
+  logger.debug("> SETUP_SWAPCHAIN");
+
   swapchain_info.image_format = surface_info.format.format;
   swapchain_info.image_color_space = surface_info.format.colorSpace;
   swapchain_info.image_extent = surface_info.extent;
@@ -285,6 +445,8 @@ int me::Vulkan::setup_swapchain()
 
 int me::Vulkan::setup_pipeline_layout()
 {
+  logger.debug("> SETUP_PIPELINE_LAYOUT");
+
   VkPipelineLayoutCreateInfo pipeline_layout_create_info = { };
   pipeline_layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipeline_layout_create_info.pNext = nullptr;
@@ -302,6 +464,19 @@ int me::Vulkan::setup_pipeline_layout()
 
 int me::Vulkan::setup_render_pass()
 {
+  logger.debug("> SETUP_RENDER_PASS");
+
+  /* create subpass dependencies */
+  uint32_t subpass_dependency_count = 1;
+  VkSubpassDependency subpass_dependencies[subpass_dependency_count];
+  subpass_dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+  subpass_dependencies[0].dstSubpass = 0;
+  subpass_dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  subpass_dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  subpass_dependencies[0].srcAccessMask = 0;
+  subpass_dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  subpass_dependencies[0].dependencyFlags = 0;
+
   uint32_t color_attachment_description_count = 1;
   VkAttachmentDescription color_attachment_descriptions[color_attachment_description_count];
   color_attachment_descriptions[0].flags = 0;
@@ -340,20 +515,22 @@ int me::Vulkan::setup_render_pass()
   render_pass_create_info.pAttachments = color_attachment_descriptions;
   render_pass_create_info.subpassCount = subpass_description_count;
   render_pass_create_info.pSubpasses = subpass_descriptions;
+  render_pass_create_info.dependencyCount = subpass_dependency_count;
+  render_pass_create_info.pDependencies = subpass_dependencies;
 
   VkResult result = vkCreateRenderPass(logical_device_info.device, &render_pass_create_info, nullptr, &render_pass_info.render_pass);
   if (result != VK_SUCCESS)
     throw exception("failed to create render pass [%s]", vk_utils_result_string(result));
-
-
 
   return 0;
 }
 
 int me::Vulkan::setup_shaders()
 {
-  for (Shader* shader : temp.shader_queue)
-    compile_shader(shader);
+  logger.debug("> SETUP_SHADERS");
+
+  for (const Shader* shader : shader_info.shaders)
+    create_shader_module(shader);
 
   shader_info.vertex_input_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
   shader_info.vertex_input_state.pNext = nullptr;
@@ -373,12 +550,20 @@ int me::Vulkan::setup_shaders()
 
 int me::Vulkan::setup_graphics_pipeline()
 {
+  logger.debug("> SETUP_GRAPHICS_PIPELINE");
+
+  setup_viewports();
+  setup_rasterizer();
+  setup_multisampling();
+  setup_color_blend();
+  setup_dynamic();
+
   VkGraphicsPipelineCreateInfo graphics_pipeline_create_info = { };
   graphics_pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
   graphics_pipeline_create_info.pNext = nullptr;
   graphics_pipeline_create_info.flags = 0;
-  graphics_pipeline_create_info.stageCount = (uint32_t) temp.pipeline_shader_stage_create_infos.size();
-  graphics_pipeline_create_info.pStages = temp.pipeline_shader_stage_create_infos.data();
+  graphics_pipeline_create_info.stageCount = (uint32_t) shader_info.pipeline_shader_stage_create_infos.size();
+  graphics_pipeline_create_info.pStages = shader_info.pipeline_shader_stage_create_infos.data();
   graphics_pipeline_create_info.pVertexInputState = &shader_info.vertex_input_state;
   graphics_pipeline_create_info.pInputAssemblyState = &shader_info.input_assembly_state;
   graphics_pipeline_create_info.pViewportState = &viewport_info.pipline_viewport_stage_create_info;
@@ -397,9 +582,167 @@ int me::Vulkan::setup_graphics_pipeline()
   if (result != VK_SUCCESS)
     throw exception("failed to create graphics piplines [%s]", vk_utils_result_string(result));
 
-  for (const VkPipelineShaderStageCreateInfo shader_stage : temp.pipeline_shader_stage_create_infos)
-    vkDestroyShaderModule(logical_device_info.device, shader_stage.module, nullptr);
-  temp.pipeline_shader_stage_create_infos.clear();
+  for (const VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info : shader_info.pipeline_shader_stage_create_infos)
+    vkDestroyShaderModule(logical_device_info.device, pipeline_shader_stage_create_info.module, nullptr);
+  shader_info.pipeline_shader_stage_create_infos.clear();
+  return 0;
+}
+
+int me::Vulkan::setup_framebuffers()
+{
+  logger.debug("> SETUP_FRAMEBUFFERS");
+
+  alloc.allocate_array(swapchain_info.image_views.count, framebuffer_info.framebuffers);
+
+  for (uint32_t i = 0; i < swapchain_info.image_views.count; i++)
+  {
+    uint32_t attachment_count = 1;
+    VkImageView attachments[attachment_count];
+    attachments[0] = swapchain_info.image_views[i];
+
+    VkFramebufferCreateInfo framebuffer_create_info = { };
+    framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebuffer_create_info.pNext = nullptr;
+    framebuffer_create_info.flags = 0;
+    framebuffer_create_info.renderPass = render_pass_info.render_pass;
+    framebuffer_create_info.attachmentCount = attachment_count;
+    framebuffer_create_info.pAttachments = attachments;
+    framebuffer_create_info.width = swapchain_info.image_extent.width;
+    framebuffer_create_info.height = swapchain_info.image_extent.height;
+    framebuffer_create_info.layers = 1;
+
+    VkResult result = vkCreateFramebuffer(logical_device_info.device, &framebuffer_create_info, nullptr, &framebuffer_info.framebuffers[i]);
+    if (result != VK_SUCCESS)
+      throw exception("failed to create framebuffer [%s]", vk_utils_result_string(result));
+  }
+  return 0;
+}
+
+int me::Vulkan::setup_command_pool()
+{
+  logger.debug("> SETUP_COMMAND_POOL");
+
+  VkCommandPoolCreateInfo command_pool_create_info = { };
+  command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  command_pool_create_info.pNext = nullptr;
+  command_pool_create_info.flags = 0;
+  command_pool_create_info.queueFamilyIndex = physical_device_info.queue_family_indices.graphics.value();
+ 
+  VkResult result = vkCreateCommandPool(logical_device_info.device, &command_pool_create_info, nullptr, &command_pool_info.command_pool);
+  if (result != VK_SUCCESS)
+    throw exception("failed to create command pool [%s]", vk_utils_result_string(result));
+  return 0;
+}
+
+int me::Vulkan::setup_command_buffers()
+{
+  logger.debug("> SETUP_COMMAND_BUFFERS");
+
+  alloc.allocate_array(framebuffer_info.framebuffers.count, command_buffers);
+
+  VkCommandBufferAllocateInfo command_buffer_allocate_info = { };
+  command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  command_buffer_allocate_info.pNext = nullptr;
+  command_buffer_allocate_info.commandPool = command_pool_info.command_pool;
+  command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  command_buffer_allocate_info.commandBufferCount = command_buffers.count;
+
+  VkResult result = vkAllocateCommandBuffers(logical_device_info.device, &command_buffer_allocate_info, command_buffers.ptr);
+  if (result != VK_SUCCESS)
+    throw exception("failed to allocate command buffers [%s]", vk_utils_result_string(result));
+
+  for (uint32_t i = 0; i < command_buffers.count; i++)
+  {
+    /* create command buffer begin info */
+    VkCommandBufferBeginInfo command_buffer_begin_info = { };
+    command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    command_buffer_begin_info.pNext = nullptr;
+    command_buffer_begin_info.flags = 0;
+    command_buffer_begin_info.pInheritanceInfo = nullptr;
+
+    /* begin command buffer */
+    result = vkBeginCommandBuffer(command_buffers[i], &command_buffer_begin_info);
+    if (result != VK_SUCCESS)
+      throw exception("failed to begin command buffer [%s]", vk_utils_result_string(result));
+
+    start_render_pass(command_buffers[i], framebuffer_info.framebuffers[i]);
+
+    /* end command buffer */
+    result = vkEndCommandBuffer(command_buffers[i]);
+    if (result != VK_SUCCESS)
+      throw exception("failed to end command buffer [%s]", result);
+  }
+  return 0;
+}
+
+int me::Vulkan::setup_synchronization()
+{
+  logger.debug("> SETUP_SEMAPHORES");
+
+  alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.image_available);
+  alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.render_finished);
+  alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.in_flight);
+  alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.images_in_flight);
+
+  VkSemaphoreCreateInfo semaphore_create_info = { };
+  semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+  semaphore_create_info.pNext = nullptr;
+  semaphore_create_info.flags = 0;
+
+  VkFenceCreateInfo fence_create_info = { };
+  fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+  fence_create_info.pNext = nullptr;
+  fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+  for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+  {
+    /* create 'image available' semaphore */
+    VkResult result = vkCreateSemaphore(logical_device_info.device, &semaphore_create_info, nullptr, &synchronization_info.image_available[i]);
+    if (result != VK_SUCCESS)
+      throw exception("failed to create semaphore [%s]", vk_utils_result_string(result));
+
+    /* create 'render finished' semaphore */
+    result = vkCreateSemaphore(logical_device_info.device, &semaphore_create_info, nullptr, &synchronization_info.render_finished[i]);
+    if (result != VK_SUCCESS)
+      throw exception("failed to create semaphore [%s]", vk_utils_result_string(result));
+
+    /* create 'in flight' fence */
+    result = vkCreateFence(logical_device_info.device, &fence_create_info, nullptr, &synchronization_info.in_flight[i]);
+    if (result != VK_SUCCESS)
+      throw exception("failed to create fence [%s]", vk_utils_result_string(result));
+
+    synchronization_info.images_in_flight[i] = VK_NULL_HANDLE;
+  }
+  return 0;
+}
+
+
+int me::Vulkan::start_render_pass(VkCommandBuffer command_buffer, VkFramebuffer framebuffer)
+{
+  /* create render pass begin info */
+  VkRenderPassBeginInfo render_pass_begin_info = { };
+  render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  render_pass_begin_info.pNext = nullptr;
+  render_pass_begin_info.renderPass = render_pass_info.render_pass;
+  render_pass_begin_info.framebuffer = framebuffer;
+  render_pass_begin_info.renderArea.offset = {0, 0};
+  render_pass_begin_info.renderArea.extent = swapchain_info.image_extent;
+
+  /* create clear values */
+  uint32_t clear_value_count = 1;
+  VkClearValue clear_values[clear_value_count];
+  clear_values[0] = { 0.0F, 0.0F, 0.0F, 1.0F };
+
+  render_pass_begin_info.clearValueCount = clear_value_count;
+  render_pass_begin_info.pClearValues = clear_values;
+
+  /* begin render pass */
+  vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+  vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_info.pipeline);
+  vkCmdDraw(command_buffer, 3, 1, 0, 0);
+
+  vkCmdEndRenderPass(command_buffer);
   return 0;
 }
 
@@ -507,74 +850,27 @@ int me::Vulkan::get_physical_device_infos(uint32_t &physical_device_count, VkPhy
   {
     PhysicalDeviceInfo &physical_device_info = physical_device_infos[i];
     physical_device_info.device = physical_devices[i];
-    get_physical_device_properties(physical_devices[i], physical_device_info.properties);
-    get_physical_device_features(physical_devices[i], physical_device_info.features);
-    get_physical_device_queue_family(physical_devices[i], physical_device_info.queue_family_indices);
+
+    vkGetPhysicalDeviceProperties(physical_devices[i], &physical_device_info.properties);
+    vkGetPhysicalDeviceFeatures(physical_devices[i], &physical_device_info.features);
+
+    /* get physical device queue family properties */
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i],
+	&physical_device_info.queue_family_properties.count, nullptr);
+    alloc.allocate_array(physical_device_info.queue_family_properties);
+    vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i],
+	&physical_device_info.queue_family_properties.count, physical_device_info.queue_family_properties.ptr);
 
     /* get physical device extensions */
-    get_physical_device_extensions(physical_devices[i], physical_device_info.extensions.count, nullptr);
+    vkEnumerateDeviceExtensionProperties(physical_devices[i], nullptr,
+	&physical_device_info.extensions.count, nullptr);
     alloc.allocate_array(physical_device_info.extensions);
-    get_physical_device_extensions(physical_devices[i], physical_device_info.extensions.count, physical_device_info.extensions.ptr);
+    vkEnumerateDeviceExtensionProperties(physical_devices[i], nullptr,
+	&physical_device_info.extensions.count, physical_device_info.extensions.ptr);
+
+    find_queue_families(physical_devices[i], surface_info.surface,
+	physical_device_info.queue_family_properties.count, physical_device_info.queue_family_properties.ptr, physical_device_info.queue_family_indices);
   }
-  return 0;
-}
-
-
-int me::Vulkan::get_physical_device_queue_family(const VkPhysicalDevice physical_device, QueueFamilyIndices &indices)
-{
-  /* get queue family properties from physical device */
-  uint32_t queue_family_property_count;
-  vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_property_count, nullptr);
-
-  VkQueueFamilyProperties queue_family_properties[queue_family_property_count];
-  vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_property_count, queue_family_properties);
-
-  for (uint32_t i = 0; i < queue_family_property_count; i++)
-  {
-    if (queue_family_properties[i].queueCount > 0)
-    {
-      if (queue_family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-	indices.graphics.assign(i);
-    }
-  }
-  return 0;
-}
-
-int me::Vulkan::get_physical_device_features(const VkPhysicalDevice physical_device, VkPhysicalDeviceFeatures &features)
-{
-  vkGetPhysicalDeviceFeatures(physical_device, &features);
-  return 0;
-}
-
-int me::Vulkan::get_physical_device_extensions(const VkPhysicalDevice physical_device, uint32_t &extension_count, VkExtensionProperties* extensions)
-{
-  /* get extension count of physical device */
-  vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, nullptr);
-  
-  if (extensions == nullptr)
-    return 0;
-
-  /* pipulate extension array */
-  vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, extensions);
-  return 0;
-}
-
-int me::Vulkan::get_physical_device_properties(const VkPhysicalDevice physical_device, VkPhysicalDeviceProperties &properties)
-{
-  vkGetPhysicalDeviceProperties(physical_device, &properties);
-  return 0;
-}
-
-int me::Vulkan::get_physical_devices(const VkInstance instance, uint32_t &physical_device_count, VkPhysicalDevice* physical_devices)
-{
-  /* get the count of physical devices */
-  vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
-
-  if (physical_devices == nullptr)
-    return 0;
-
-  /* populate physical device array */
-  vkEnumeratePhysicalDevices(instance, &physical_device_count, physical_devices);
   return 0;
 }
 
@@ -618,13 +914,7 @@ int me::Vulkan::get_surface_capabilities(const VkPhysicalDevice physical_device,
 }
 
 
-int me::Vulkan::queue_shader(Shader* shader) const
-{
-  temp.shader_queue.push_back(shader);
-  return 0;
-}
-
-int me::Vulkan::compile_shader(Shader* shader) const
+int me::Vulkan::create_shader_module(const Shader* shader)
 {
   VkShaderModuleCreateInfo shader_create_info = { };
   shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -641,20 +931,112 @@ int me::Vulkan::compile_shader(Shader* shader) const
   VkShaderStageFlagBits shader_stage_flag_bits;
   get_shader_stage_flag(shader->get_type(), shader_stage_flag_bits);
 
-  VkPipelineShaderStageCreateInfo shader_stage_create_info = { };
-  shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-  shader_stage_create_info.pNext = nullptr;
-  shader_stage_create_info.flags = 0;
-  shader_stage_create_info.stage = shader_stage_flag_bits;
-  shader_stage_create_info.module = shader_module;
-  shader_stage_create_info.pName = shader->get_config().entry_point.c_str();
-  shader_stage_create_info.pSpecializationInfo = nullptr;
+  VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info = { };
+  pipeline_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  pipeline_shader_stage_create_info.pNext = nullptr;
+  pipeline_shader_stage_create_info.flags = 0;
+  pipeline_shader_stage_create_info.stage = shader_stage_flag_bits;
+  pipeline_shader_stage_create_info.module = shader_module;
+  pipeline_shader_stage_create_info.pName = shader->get_config().entry_point;
+  pipeline_shader_stage_create_info.pSpecializationInfo = nullptr;
 
-  temp.pipeline_shader_stage_create_infos.push_back(shader_stage_create_info);
+  shader_info.pipeline_shader_stage_create_infos.push_back(pipeline_shader_stage_create_info);
   return 0;
 }
 
-int me::Vulkan::register_shader(Shader* shader) const
+int me::Vulkan::register_shader(Shader* shader)
 {
+  shader_info.shaders.push_back(shader);
   return 0;
 }
+
+
+#ifndef NDEBUG
+int me::Vulkan::setup_debug_messenger()
+{
+  PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)
+    vkGetInstanceProcAddr(instance_info.instance, "vkCreateDebugUtilsMessengerEXT");
+
+  VkDebugUtilsMessengerCreateInfoEXT debug_utils_messenger_create_info = { };
+  debug_utils_messenger_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+  debug_utils_messenger_create_info.pNext = nullptr;
+  debug_utils_messenger_create_info.flags = 0;
+  debug_utils_messenger_create_info.messageSeverity =
+    VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+    VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+    VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+    VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+  debug_utils_messenger_create_info.pfnUserCallback = debug_callback;
+  debug_utils_messenger_create_info.pUserData = &logger;
+
+  VkResult result = vkCreateDebugUtilsMessengerEXT(instance_info.instance, &debug_utils_messenger_create_info,
+      nullptr, &debug_info.debug_utils_messenger);
+
+  if (result != VK_SUCCESS)
+    throw exception("failed to create debug utils messenger [%s]", vk_utils_result_string(result));
+  return 0;
+}
+
+int me::Vulkan::setup_debug_report()
+{
+  PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)
+    vkGetInstanceProcAddr(instance_info.instance, "vkCreateDebugReportCallbackEXT");
+
+  VkDebugReportCallbackCreateInfoEXT debug_report_callback_create_info = { };
+  debug_report_callback_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+  debug_report_callback_create_info.pNext = nullptr;
+  debug_report_callback_create_info.flags =
+    VK_DEBUG_REPORT_ERROR_BIT_EXT |
+    VK_DEBUG_REPORT_WARNING_BIT_EXT |
+    VK_DEBUG_REPORT_INFORMATION_BIT_EXT;
+  debug_report_callback_create_info.pfnCallback = debug_callback;
+  debug_report_callback_create_info.pUserData = &logger;
+
+  VkResult result = vkCreateDebugReportCallbackEXT(instance_info.instance, &debug_report_callback_create_info,
+      nullptr, &debug_info.debug_report_callback);
+  if (result != VK_SUCCESS)
+    throw exception("failed to create debug report callback [%s]", vk_utils_result_string(result));
+  return 0;
+}
+
+int me::Vulkan::terminate_debug_messenger()
+{
+  PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)
+    vkGetInstanceProcAddr(instance_info.instance, "vkDestroyDebugUtilsMessengerEXT");
+
+  vkDestroyDebugUtilsMessengerEXT(instance_info.instance, debug_info.debug_utils_messenger, nullptr);
+  return 0;
+}
+
+VkBool32 me::Vulkan::debug_callback(VkDebugReportFlagsEXT debug_report_flags, VkDebugReportObjectTypeEXT debug_report_object_type,
+    uint64_t object, size_t location, int32_t message_code,
+    const char* layer_prefix, const char* message, void* user_data)
+{
+  Logger* logger = (Logger*) user_data;
+  if (debug_report_flags == VK_DEBUG_REPORT_ERROR_BIT_EXT)
+    logger->err("[%s]\n%s", layer_prefix, message);
+  else if (debug_report_flags == VK_DEBUG_REPORT_WARNING_BIT_EXT)
+    logger->warn("[%s]\n%s", layer_prefix, message);
+  else if (debug_report_flags == VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
+    logger->info("%s [%i] ==> %s", layer_prefix, message_code, message);
+  else if (debug_report_flags == VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+    logger->debug("[%s] %s", layer_prefix, message);
+  return VK_FALSE;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL me::Vulkan::debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+    VkDebugUtilsMessageTypeFlagsEXT message_type,
+    const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data)
+{
+  Logger* logger = (Logger*) user_data;
+  if (message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+    logger->err("[Validation Layer] %s", callback_data->pMessage);
+  else if (message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+    logger->warn("[Validation Layer] %s", callback_data->pMessage);
+  else if (message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+    logger->info("[Validation Layer] %s", callback_data->pMessage);
+  else if (message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+    logger->debug("[Validation Layer] %s", callback_data->pMessage);
+  return VK_FALSE;
+}
+#endif
