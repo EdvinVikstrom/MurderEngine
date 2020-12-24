@@ -78,6 +78,15 @@ namespace me {
     }
   }
 
+  static inline const char* module_semaphore_flag_name(const ModuleSemaphoreFlags flag)
+  {
+    switch (flag)
+    {
+      case MODULE_SEMAPHORE_TERMINATE_FLAG: return "TERMINATE";
+      default: return "";
+    }
+  }
+
 }
 
 #endif

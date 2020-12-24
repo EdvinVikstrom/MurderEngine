@@ -17,6 +17,8 @@ me::Vulkan::Vulkan(const VulkanSurface &me_surface)
 
 int me::Vulkan::initialize(const ModuleInfo module_info)
 {
+  logger.trace_all();
+
   setup_extensions();
   setup_layers();
   setup_instance(module_info.engine_info);

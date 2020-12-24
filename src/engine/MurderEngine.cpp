@@ -16,11 +16,13 @@ int me::MurderEngine::initialize(int argc, char** argv)
 
   Semaphore init_semaphore;
   init_modules(init_semaphore);
+  translate_semaphore(init_semaphore);
 
   while (running)
   {
     Semaphore tick_semaphore;
     tick_modules(tick_semaphore);
+    translate_semaphore(tick_semaphore);
   }
   return 0;
 }
@@ -30,8 +32,9 @@ int me::MurderEngine::terminate()
   running = false;
   printf("terminating...\n");
 
-  Semaphore semaphore;
-  terminate_modules(semaphore);
+  Semaphore terminate_semaphore;
+  terminate_modules(terminate_semaphore);
+  translate_semaphore(terminate_semaphore);
 
   abort();
   return 0;
@@ -40,7 +43,10 @@ int me::MurderEngine::terminate()
 int me::MurderEngine::translate_semaphore(const Semaphore &semaphore)
 {
   if (semaphore.flags & MODULE_SEMAPHORE_TERMINATE_FLAG)
+  {
+    logger.debug("received '%s' flag", module_semaphore_flag_name(MODULE_SEMAPHORE_TERMINATE_FLAG));
     terminate();
+  }
   return 0;
 }
 
@@ -51,7 +57,6 @@ int me::MurderEngine::init_modules(Semaphore &semaphore)
     try {
       module->initialize({&semaphore, &engine_bus, &engine_info});
       logger.debug("loaded module %s '%s'", module_type_name(module->get_type()), module->get_name().c_str());
-      translate_semaphore(semaphore);
     }catch(const exception &e)
     {
       logger.err("failed to initialize module '%s'\n\t%s", module->get_name().c_str(), e.get_message());
@@ -67,7 +72,6 @@ int me::MurderEngine::tick_modules(Semaphore &semaphore)
   {
     try {
       module->tick({&semaphore, &engine_bus, &engine_info});
-      translate_semaphore(semaphore);
     }catch(const exception &e)
     {
       logger.err("received an error from module '%s'\n\t%s", module->get_name().c_str(), e.get_message());
@@ -83,7 +87,6 @@ int me::MurderEngine::terminate_modules(Semaphore &semaphore)
   {
     try {
       module->terminate({&semaphore, &engine_bus, &engine_info});
-      translate_semaphore(semaphore);
     }catch(const exception &e)
     {
       logger.err("failed to terminate module '%s'\n\t%s", module->get_name().c_str(), e.get_message());

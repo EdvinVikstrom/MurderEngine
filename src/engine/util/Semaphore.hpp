@@ -4,7 +4,7 @@
 namespace me {
 
   struct Semaphore {
-    uint32_t flags;
+    uint32_t flags = 0;
   };
 
 }

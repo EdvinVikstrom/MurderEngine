@@ -6,8 +6,8 @@
 
 #include <lme/time.hpp>
 
-me::VKWindowSurface::VKWindowSurface()
-  : VulkanSurface("glfw"), logger("VK-Window")
+me::VKWindowSurface::VKWindowSurface(Callbacks &callbacks)
+  : VulkanSurface("glfw", callbacks), logger("Vk-Window")
 {
 }
 
@@ -25,12 +25,9 @@ int me::VKWindowSurface::initialize(const ModuleInfo module_info)
   if (!glfwInit())
     throw exception("failed to initialize GLFW");
 
-  uint32_t width = 1550, height = 770;
-  const char* title = "title";
-
+  Surface::callbacks.init_surface(Surface::config);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfw_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
-  glfwSwapInterval(1);
+  glfw_window = glfwCreateWindow(Surface::config.width, Surface::config.height, Surface::config.title.c_str(), nullptr, nullptr);
   return 0;
 }
 
@@ -71,4 +68,25 @@ int me::VKWindowSurface::get_size(uint32_t &width, uint32_t &height) const
 size_t me::VKWindowSurface::get_current_frame_index() const
 {
   return frame_index;
+}
+
+int me::VKWindowSurface::refresh()
+{
+  return 0;
+}
+
+int me::VKWindowSurface::update_config(Config &new_config)
+{
+  if (!new_config.title.is_empty())
+    Surface::config.title = new_config.title;
+
+  if (new_config.monitor.ptr != nullptr)
+    Surface::config.monitor = new_config.monitor;
+
+  if (new_config.width != -1)
+    Surface::config.width = new_config.width;
+
+  if (new_config.height != -1)
+    Surface::config.height = new_config.height;
+  return 0;
 }

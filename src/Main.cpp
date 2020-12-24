@@ -1,5 +1,8 @@
+/* ignore the mess just testing */
+
 #include "engine/MurderEngine.hpp"
 #include "engine/renderer/Shader.hpp"
+#include "engine/surface/Surface.hpp"
 #include "engine/surface/VulkanSurface.hpp"
 #include "engine/surface/window/VKWindowSurface.hpp"
 #include "engine/renderer/vulkan/Vulkan.hpp"
@@ -26,11 +29,23 @@ protected:
 
 };
 
+static int init_window_callback(me::Surface::Config &config)
+{
+  config.title = "A title";
+  config.width = 1550;
+  config.height = 770;
+  return 0;
+}
+
 int main(int argc, char** argv)
 {
+  me::Surface::Callbacks surface_callbacks = {
+    .init_surface = init_window_callback
+  };
+
   me::Module* modules[3];
   modules[0] = new Sandbox();
-  modules[1] = new me::VKWindowSurface();
+  modules[1] = new me::VKWindowSurface(surface_callbacks);
   modules[2] = new me::Vulkan(*(((me::VulkanSurface*) modules[1])));
 
   me::ApplicationInfo app_info = {

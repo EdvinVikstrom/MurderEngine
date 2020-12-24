@@ -11,8 +11,8 @@ namespace me {
 
   public:
 
-    VulkanSurface(const string &name)
-      : Surface(name)
+    VulkanSurface(const string &name, Callbacks &callbacks)
+      : Surface(name, callbacks)
     {
     }
 
