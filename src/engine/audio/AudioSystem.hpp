@@ -5,6 +5,35 @@
 
 namespace me {
 
+  enum AudioFormat {
+    AUDIO_PCM_FORMAT
+  };
+
+
+  struct AudioInfo {
+    AudioFormat format;
+    uint32_t sample_rate;
+    uint8_t channels;
+    uint8_t depth;
+  };
+
+  class AudioTrack {
+
+  public:
+
+    const AudioInfo info;
+    const size_t length;
+    const float* data;
+    mutable size_t position;
+
+    AudioTrack(const AudioInfo &info, const size_t length, const float* data, size_t position)
+      : info(info), length(length), data(data)
+    {
+      this->position = position;
+    }
+
+  };
+
   class AudioSystem : public Module {
 
   protected:
@@ -15,6 +44,8 @@ namespace me {
       : Module(MODULE_AUDIO_TYPE, name)
     {
     }
+
+    virtual int push(const AudioTrack* track) = 0;
 
   };
 

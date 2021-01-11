@@ -1,10 +1,10 @@
 /* ignore the mess just testing */
 
 #include "engine/MurderEngine.hpp"
+#include "engine/audio/AudioSystem.hpp"
 #include "engine/renderer/Shader.hpp"
 #include "engine/surface/Surface.hpp"
-#include "engine/surface/VulkanSurface.hpp"
-#include "engine/surface/window/VKWindowSurface.hpp"
+#include "engine/surface/window/WindowSurface.hpp"
 #include "engine/renderer/vulkan/Vulkan.hpp"
 #include "engine/audio/portaudio/PortAudio.hpp"
 
@@ -45,8 +45,9 @@ int main(int argc, char** argv)
 
   me::Module* modules[3];
   modules[0] = new Sandbox();
-  modules[1] = new me::VKWindowSurface(surface_callbacks);
-  modules[2] = new me::Vulkan(*(((me::VulkanSurface*) modules[1])));
+  modules[1] = new me::WindowSurface(surface_callbacks);
+  modules[2] = new me::Vulkan(reinterpret_cast<me::Surface*>(modules[1]));
+  //modules[1] = new me::PortAudio();
 
   me::ApplicationInfo app_info = {
     .name = "Sandbox",
@@ -83,7 +84,6 @@ int Sandbox::initialize(const me::ModuleInfo module_info)
 
   renderer->register_shader(vertex_shader);
   renderer->register_shader(fragment_shader);
-
   return 0;
 }
 

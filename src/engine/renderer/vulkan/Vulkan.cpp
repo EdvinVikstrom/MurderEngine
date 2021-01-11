@@ -10,7 +10,7 @@
 #include <lme/set.hpp>
 #include <vulkan/vulkan_core.h>
 
-me::Vulkan::Vulkan(const VulkanSurface &me_surface)
+me::Vulkan::Vulkan(const Surface* me_surface)
   : Renderer("vulkan"), me_surface(me_surface), logger("Vulkan")
 {
 }
@@ -26,7 +26,7 @@ int me::Vulkan::initialize(const ModuleInfo module_info)
   setup_debug_messenger();
   setup_debug_report();
 #endif
-  me_surface.create_surface(instance_info.instance, nullptr, &surface_info.surface);
+  me_surface->vk_create_surface(instance_info.instance, nullptr, &surface_info.surface);
   setup_device_extensions();
   setup_device_layers();
   setup_physical_device();
@@ -51,12 +51,8 @@ int me::Vulkan::terminate(const ModuleInfo module_info)
 
 #ifndef NDEBUG
   terminate_debug_messenger();
+  terminate_debug_report();
 #endif
-
-  for (uint32_t i = 0; i < framebuffer_info.framebuffers.count; i++)
-    vkDestroyFramebuffer(logical_device_info.device, framebuffer_info.framebuffers[i], nullptr);
-  for (uint32_t i = 0; i < swapchain_info.image_views.count; i++)
-    vkDestroyImageView(logical_device_info.device, swapchain_info.image_views[i], nullptr);
 
   /* destroy synchronization stuff */
   for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -66,12 +62,21 @@ int me::Vulkan::terminate(const ModuleInfo module_info)
     vkDestroyFence(logical_device_info.device, synchronization_info.in_flight[i], nullptr);
   }
 
+  vkDestroyCommandPool(logical_device_info.device, command_pool_info.command_pool, nullptr);
+
+  for (uint32_t i = 0; i < framebuffer_info.framebuffers.count; i++)
+    vkDestroyFramebuffer(logical_device_info.device, framebuffer_info.framebuffers[i], nullptr);
+
   vkDestroyPipeline(logical_device_info.device, graphics_pipeline_info.pipeline, nullptr);
   vkDestroyPipelineLayout(logical_device_info.device, pipeline_layout_info.pipeline_layout, nullptr);
   vkDestroyRenderPass(logical_device_info.device, render_pass_info.render_pass, nullptr);
+
+  for (uint32_t i = 0; i < swapchain_info.image_views.count; i++)
+    vkDestroyImageView(logical_device_info.device, swapchain_info.image_views[i], nullptr);
+
   vkDestroySwapchainKHR(logical_device_info.device, swapchain_info.swapchain, nullptr);
-  vkDestroyCommandPool(logical_device_info.device, command_pool_info.command_pool, nullptr);
   vkDestroyDevice(logical_device_info.device, nullptr);
+
   vkDestroySurfaceKHR(instance_info.instance, surface_info.surface, nullptr);
   vkDestroyInstance(instance_info.instance, nullptr);
   return 0;
@@ -98,27 +103,27 @@ int me::Vulkan::render(RenderInfo &render_info)
 
 
   /* create wait semaphores */
-  uint32_t wait_semaphore_count = 1;
+  static uint32_t wait_semaphore_count = 1;
   VkSemaphore wait_semaphores[wait_semaphore_count];
   wait_semaphores[0] = synchronization_info.image_available[render_info.frame_index];
 
   /* create wait stages */
-  uint32_t wait_stage_count = 1;
+  static uint32_t wait_stage_count = 1;
   VkPipelineStageFlags wait_stages[wait_stage_count];
   wait_stages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
   /* get command buffers */
-  uint32_t command_buffer_count = 1;
+  static uint32_t command_buffer_count = 1;
   VkCommandBuffer command_buffers[command_buffer_count];
   command_buffers[0] = this->command_buffers[image_index];
 
   /* create signal semaphores */
-  uint32_t signal_semaphore_count = 1;
+  static uint32_t signal_semaphore_count = 1;
   VkSemaphore signal_semaphores[signal_semaphore_count];
   signal_semaphores[0] = synchronization_info.render_finished[render_info.frame_index];
 
   /* create submit infos */
-  uint32_t submit_info_count = 1;
+  static uint32_t submit_info_count = 1;
   VkSubmitInfo submit_infos[submit_info_count];
   submit_infos[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submit_infos[0].pNext = nullptr;
@@ -138,7 +143,7 @@ int me::Vulkan::render(RenderInfo &render_info)
 
 
   /* get swapchains */
-  uint32_t swapchain_count = 1;
+  static uint32_t swapchain_count = 1;
   VkSwapchainKHR swapchains[swapchain_count];
   swapchains[0] = swapchain_info.swapchain;
 
@@ -174,8 +179,9 @@ int me::Vulkan::setup_extensions()
   required_extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 #endif
 
+  /* get required surface extensions */
   uint32_t surface_extension_count;
-  const char** surface_extensions = me_surface.get_extensions(surface_extension_count);
+  const char** surface_extensions = me_surface->vk_get_required_surface_extensions(surface_extension_count);
   for (uint32_t i = 0; i < surface_extension_count; i++)
     required_extensions.push_back(surface_extensions[i]);
 
@@ -362,7 +368,7 @@ int me::Vulkan::setup_surface()
     surface_info.extent = surface_info.capabilities.currentExtent;
 
   /* get the size of the surface */
-  me_surface.get_size(surface_info.extent.width, surface_info.extent.height);
+  me_surface->get_size(surface_info.extent.width, surface_info.extent.height);
   get_extent(surface_info.capabilities.maxImageExtent, surface_info.capabilities.minImageExtent, surface_info.extent);
   return 0;
 }
@@ -968,6 +974,7 @@ int me::Vulkan::setup_debug_messenger()
     VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
     VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
     VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
+  debug_utils_messenger_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT;
   debug_utils_messenger_create_info.pfnUserCallback = debug_callback;
   debug_utils_messenger_create_info.pUserData = &logger;
 
@@ -990,7 +997,9 @@ int me::Vulkan::setup_debug_report()
   debug_report_callback_create_info.flags =
     VK_DEBUG_REPORT_ERROR_BIT_EXT |
     VK_DEBUG_REPORT_WARNING_BIT_EXT |
-    VK_DEBUG_REPORT_INFORMATION_BIT_EXT;
+    VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+    VK_DEBUG_REPORT_INFORMATION_BIT_EXT |
+    VK_DEBUG_REPORT_DEBUG_BIT_EXT;
   debug_report_callback_create_info.pfnCallback = debug_callback;
   debug_report_callback_create_info.pUserData = &logger;
 
@@ -1010,19 +1019,30 @@ int me::Vulkan::terminate_debug_messenger()
   return 0;
 }
 
+int me::Vulkan::terminate_debug_report()
+{
+  PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)
+    vkGetInstanceProcAddr(instance_info.instance, "vkDestroyDebugReportCallbackEXT");
+
+  vkDestroyDebugReportCallbackEXT(instance_info.instance, debug_info.debug_report_callback, nullptr);
+  return 0;
+}
+
 VkBool32 me::Vulkan::debug_callback(VkDebugReportFlagsEXT debug_report_flags, VkDebugReportObjectTypeEXT debug_report_object_type,
     uint64_t object, size_t location, int32_t message_code,
     const char* layer_prefix, const char* message, void* user_data)
 {
   Logger* logger = (Logger*) user_data;
   if (debug_report_flags == VK_DEBUG_REPORT_ERROR_BIT_EXT)
-    logger->err("[%s]\n%s", layer_prefix, message);
+    logger->err("%s", message);
   else if (debug_report_flags == VK_DEBUG_REPORT_WARNING_BIT_EXT)
-    logger->warn("[%s]\n%s", layer_prefix, message);
+    logger->warn("%s", message);
+  else if (debug_report_flags == VK_DEBUG_REPORT_WARNING_BIT_EXT)
+    logger->warn("%s", message);
   else if (debug_report_flags == VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
-    logger->info("%s [%i] ==> %s", layer_prefix, message_code, message);
+    logger->info("%s", message);
   else if (debug_report_flags == VK_DEBUG_REPORT_DEBUG_BIT_EXT)
-    logger->debug("[%s] %s", layer_prefix, message);
+    logger->debug("%s", message);
   return VK_FALSE;
 }
 

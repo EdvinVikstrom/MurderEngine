@@ -28,7 +28,7 @@ struct QueueInfo {
 };
 
 struct SurfaceInfo {
-  VkSurfaceKHR surface;
+  VkSurfaceKHR surface = VK_NULL_HANDLE;
   VkSurfaceCapabilitiesKHR capabilities;
   VkSurfaceFormatKHR format;
   VkPresentModeKHR present_mode;
@@ -53,7 +53,7 @@ struct PipelineLayoutInfo {
 };
 
 struct GraphicsPipelineInfo {
-  VkPipeline pipeline;
+  VkPipeline pipeline = VK_NULL_HANDLE;
 };
 
 struct FramebufferInfo {
@@ -107,12 +107,6 @@ struct ShaderInfo {
 
 struct RenderInfo {
   uint32_t frame_index;
-};
-
-struct Storage {
-};
-
-struct Temp {
 };
 
 #ifndef NDEBUG

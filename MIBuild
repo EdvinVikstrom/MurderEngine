@@ -42,7 +42,8 @@ include_path: [
 ]
 
 define: [
-  { name "WAYLAND" }
+  { name "ME_USE_VULKAN" }
+  # { name "NDEBUG" }
 ]
 
 flags: ["-g"]

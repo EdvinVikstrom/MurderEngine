@@ -6,7 +6,15 @@
 #include <lme/vector.hpp>
 #include <lme/string.hpp>
 
+#ifdef ME_USE_VULKAN
+  #include <vulkan/vulkan.h>
+#endif
+
 namespace me {
+
+  enum SurfaceProperty {
+  };
+
 
   class Surface : public Module {
 
@@ -17,11 +25,9 @@ namespace me {
     };
 
     struct Config {
-      string title;
+      char const* title = "";
+      uint32_t width, height;
       Monitor monitor;
-
-      /* for window stuff */
-      uint32_t width = -1, height = -1;
     };
 
     struct Callbacks {
@@ -41,11 +47,13 @@ namespace me {
       this->callbacks.init_surface = callbacks.init_surface;
     }
 
+    virtual int get_properties(const SurfaceProperty property, uint32_t &count, void* data) const = 0;
     virtual int get_size(uint32_t &width, uint32_t &height) const = 0;
-    virtual size_t get_current_frame_index() const = 0;
 
-    virtual int refresh() = 0;
-    virtual int update_config(Config &new_config) = 0;
+#ifdef ME_USE_VULKAN
+    virtual const char** vk_get_required_surface_extensions(uint32_t &count) const = 0;
+    virtual int vk_create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const = 0;
+#endif
 
   };
 

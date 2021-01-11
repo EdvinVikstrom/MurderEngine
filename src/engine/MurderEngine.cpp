@@ -2,6 +2,7 @@
 
 #include "EngineBus.hpp"
 #include "Module.hpp"
+#include "audio/AudioSystem.hpp"
 
 /* class MurderEngine */
 me::MurderEngine::MurderEngine(const EngineInfo &engine_info)
@@ -138,5 +139,10 @@ me::Module* me::EngineBus::get_module(const uint32_t module_type) const
 me::Renderer* me::EngineBus::get_active_renderer_module() const
 {
   return (Renderer*) get_module(MODULE_RENDERER_TYPE);
+}
+
+me::AudioSystem* me::EngineBus::get_active_audio_module() const
+{
+  return (AudioSystem*) get_module(MODULE_AUDIO_TYPE);
 }
 /* end class EngineBus */

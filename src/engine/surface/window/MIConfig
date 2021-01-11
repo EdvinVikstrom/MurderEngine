@@ -1,3 +1,0 @@
-sources += [
-  "$(DIR)/Window.cpp"
-]

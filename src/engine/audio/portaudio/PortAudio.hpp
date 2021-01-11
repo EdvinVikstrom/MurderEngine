@@ -17,6 +17,10 @@ namespace me {
 
     PaStream* stream;
 
+  protected:
+
+    const AudioTrack* tracks[4];
+
   public:
 
     explicit PortAudio();
@@ -24,6 +28,8 @@ namespace me {
     int initialize(const ModuleInfo) override;
     int terminate(const ModuleInfo) override;
     int tick(const ModuleInfo) override;
+
+    int push(const AudioTrack* track) override;
 
   protected:
 

@@ -4,7 +4,7 @@
 #include "VulkanMemory.hpp"
 
 #include "../Renderer.hpp"
-#include "../../surface/VulkanSurface.hpp"
+#include "../../surface/Surface.hpp"
 #include "../../Logger.hpp"
 
 #include <vulkan/vulkan.h>
@@ -42,8 +42,6 @@ namespace me {
     struct ShaderInfo;
     struct ShadersInfo;
     struct RenderInfo;
-    struct Storage;
-    struct Temp;
 
 #ifndef NDEBUG
     struct DebugInfo;
@@ -57,10 +55,7 @@ namespace me {
 
     VulkanAlloc alloc;
 
-    mutable Storage storage;
-    mutable Temp temp;
-
-    const VulkanSurface &me_surface;
+    const Surface* me_surface;
     vector<const char*> required_extensions;
     vector<const char*> required_layers;
 
@@ -98,7 +93,7 @@ namespace me {
 
   public:
 
-    explicit Vulkan(const VulkanSurface &me_surface);
+    explicit Vulkan(const Surface* me_surface);
 
     int register_shader(Shader* shader) override;
 
@@ -166,6 +161,7 @@ namespace me {
     int setup_debug_report();
 
     int terminate_debug_messenger();
+    int terminate_debug_report();
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT,
 	uint64_t object, size_t location, int32_t message_code,

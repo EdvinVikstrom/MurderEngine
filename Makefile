@@ -3,7 +3,7 @@ BUILD = build
 OUTNAME = MurderEngine
 CC = g++
 
-CFLAGS = -g -O0 -std=c++20 -DNDEBUG
+CFLAGS = -g -O0 -std=c++20
 LIBS = -lme \
 	-lpthread \
 	-lvulkan \
@@ -12,7 +12,7 @@ LIBS = -lme \
 INCS = --include=lme/type.hpp
 LPATHS = -L./extern/libme -L./extern/glfw/src
 IPATHS = -I./extern/libme/include -I./extern/glfw/include -I./extern/portaudio/include -I./extern/rapidxml
-DEFS = -DWAYLAND
+DEFS = -DME_USE_VULKAN
 
 PKG_CONFIG_PATH = ./extern/libme:./extern/glfw/src:./extern/libme/include:./extern/glfw/include:./extern/portaudio/include:./extern/rapidxml:
 CPKG = $$(env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags glfw3)
@@ -31,7 +31,7 @@ SOURCES = ./src/Main.cpp \
 	./src/engine/MurderEngine.cpp \
 	./src/engine/Logger.cpp \
 	./src/engine/renderer/vulkan/Vulkan.cpp \
-	./src/engine/surface/window/VKWindowSurface.cpp \
+	./src/engine/surface/window/WindowSurface.cpp \
 	./src/engine/scene/Scene.cpp \
 	./src/engine/audio/portaudio/PortAudio.cpp \
 	./src/engine/format/shader/shader_format.cpp
