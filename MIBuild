@@ -11,42 +11,30 @@ configure: {
   optimization O0
 }
 
-EXTPATH = "$(DIR)/extern"
+PLATFORM = "linux"
+RENDERER = "vulkan"
+DEBUG = true
+
+
 sources = [ ]
 
+source: "$(DIR)/extern/MIConfig"
 source: "$(DIR)/src/MIConfig"
-
-library: [
-  { lib "me" } 
-  { lib "pthread" }
-  { lib "vulkan" }
-  { lib "portaudio" }
-  { lib "glfw3" pkg { static true flags [ "--libs" ] name "glfw3" } }
-]
 
 include: [
   { include "lme/type.hpp" }
-  { pkg { flags [ "--cflags" ] name "glfw3" } }
 ]
 
-library_path: [
-  "$(DIR)/extern/libme"
-  "$(DIR)/extern/glfw/src"
-]
+if $RENDERER == "vulkan" then
+  define: [ { name "ME_USE_VULKAN" } ]
+end
 
-include_path: [
-  "$(DIR)/extern/libme/include"
-  "$(DIR)/extern/glfw/include"
-  "$(DIR)/extern/portaudio/include"
-  "$(DIR)/extern/rapidxml"
-]
+if $DEBUG then
+  flags: [ "-g" ]
+else
+  define: [ "NDEBUG" ]
+end
 
-define: [
-  { name "ME_USE_VULKAN" }
-  # { name "NDEBUG" }
-]
-
-flags: ["-g"]
 files: $sources
 makefile: "$(DIR)/Makefile"
 ycm_config: "$(DIR)/.ycm_extra_conf.py"

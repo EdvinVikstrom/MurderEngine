@@ -11,10 +11,10 @@ LIBS = -lme \
 	-lglfw3
 INCS = --include=lme/type.hpp
 LPATHS = -L./extern/libme -L./extern/glfw/src
-IPATHS = -I./extern/libme/include -I./extern/glfw/include -I./extern/portaudio/include -I./extern/rapidxml
+IPATHS = -I./extern/libme/include -I./extern/glfw/include -I./extern/portaudio/include
 DEFS = -DME_USE_VULKAN
 
-PKG_CONFIG_PATH = ./extern/libme:./extern/glfw/src:./extern/libme/include:./extern/glfw/include:./extern/portaudio/include:./extern/rapidxml:
+PKG_CONFIG_PATH = ./extern/libme:./extern/glfw/src:./extern/libme/include:./extern/glfw/include:./extern/portaudio/include:
 CPKG = $$(env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags glfw3)
 LPKG = $$(env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --static --libs glfw3)
 

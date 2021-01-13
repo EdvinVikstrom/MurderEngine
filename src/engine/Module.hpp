@@ -21,6 +21,11 @@ namespace me {
     MODULE_SEMAPHORE_TERMINATE_FLAG = 1
   };
 
+  enum ModuleState {
+    MODULE_ACTIVE_STATE,
+    MODULE_IDLE_STATE
+  };
+
 
   struct ModuleInfo {
     mutable Semaphore* semaphore;
@@ -38,11 +43,14 @@ namespace me {
     const ModuleTypes module_type;
     const string name;
 
+    mutable ModuleState module_state;
+
   public:
 
-    Module(const ModuleTypes module_type, const string &name)
+    Module(const ModuleTypes module_type, const string &name, ModuleState module_state = MODULE_ACTIVE_STATE)
       : module_type(module_type), name(name)
     {
+      this->module_state = module_state;
     }
 
     const ModuleTypes get_type() const

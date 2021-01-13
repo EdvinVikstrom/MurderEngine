@@ -1,4 +1,5 @@
 #include <vulkan/vulkan_core.h>
+
 struct QueueFamilyIndices {
   me::optional<uint32_t> graphics;
   me::optional<uint32_t> present;
@@ -29,14 +30,13 @@ struct QueueInfo {
 
 struct SurfaceInfo {
   VkSurfaceKHR surface = VK_NULL_HANDLE;
-  VkSurfaceCapabilitiesKHR capabilities;
-  VkSurfaceFormatKHR format;
-  VkPresentModeKHR present_mode;
-  VkExtent2D extent;
 };
 
 struct SwapchainInfo {
   VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+  VkSurfaceCapabilitiesKHR surface_capabilities;
+  VkSurfaceFormatKHR surface_format;
+  VkPresentModeKHR present_mode;
   VkExtent2D image_extent;
   VkFormat image_format;
   VkColorSpaceKHR image_color_space;
@@ -106,7 +106,20 @@ struct ShaderInfo {
 };
 
 struct RenderInfo {
-  uint32_t frame_index;
+
+  enum Flag : uint8_t {
+    FRAMEBUFFER_RESIZED_FLAG_BIT = 1
+  };
+
+  enum State : uint8_t {
+    IDLE_STATE,
+    ACTIVE_STATE,
+    NO_SWAPCHAIN_STATE
+  };
+
+  uint8_t flags = 0;
+  State state = IDLE_STATE;
+  uint32_t frame_index = 0;
 };
 
 #ifndef NDEBUG

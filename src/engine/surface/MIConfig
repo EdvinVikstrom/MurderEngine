@@ -1,3 +1,7 @@
 sources += [
   "$(DIR)/window/WindowSurface.cpp"
 ]
+
+if $PLATFORM == "android" then
+  sources += [ "$(DIR)/platform/AndroidSurface.cpp" ]
+end

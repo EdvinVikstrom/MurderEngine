@@ -3,7 +3,6 @@
 #include "engine/MurderEngine.hpp"
 #include "engine/audio/AudioSystem.hpp"
 #include "engine/renderer/Shader.hpp"
-#include "engine/surface/Surface.hpp"
 #include "engine/surface/window/WindowSurface.hpp"
 #include "engine/renderer/vulkan/Vulkan.hpp"
 #include "engine/audio/portaudio/PortAudio.hpp"
@@ -39,13 +38,15 @@ static int init_window_callback(me::Surface::Config &config)
 
 int main(int argc, char** argv)
 {
-  me::Surface::Callbacks surface_callbacks = {
+  me::Surface::UserCallbacks surface_user_callbacks = {
     .init_surface = init_window_callback
+  };
+  me::Surface::Callbacks surface_callbacks = {
   };
 
   me::Module* modules[3];
   modules[0] = new Sandbox();
-  modules[1] = new me::WindowSurface(surface_callbacks);
+  modules[1] = new me::WindowSurface(surface_user_callbacks, surface_callbacks);
   modules[2] = new me::Vulkan(reinterpret_cast<me::Surface*>(modules[1]));
   //modules[1] = new me::PortAudio();
 

@@ -5,6 +5,7 @@
 
 #include <lme/vector.hpp>
 #include <lme/string.hpp>
+#include <lme/pair.hpp>
 
 #ifdef ME_USE_VULKAN
   #include <vulkan/vulkan.h>
@@ -30,30 +31,48 @@ namespace me {
       Monitor monitor;
     };
 
+    struct UserCallbacks {
+      typedef int (init_surface_fn) (Config&);
+      typedef int (resize_surface_fn) (int width, int height);
+
+      init_surface_fn* init_surface;
+      resize_surface_fn* resize_surface;
+    };
+
     struct Callbacks {
-      int (*init_surface) (Config&);
+      typedef int (resize_surface_fn) (uint32_t width, uint32_t height, void* ptr);
+
+      vector<pair<resize_surface_fn*, void*>> resize_surface;
     };
 
   protected:
 
+    UserCallbacks user_callbacks;
     Callbacks callbacks;
     Config config;
 
   public:
 
-    explicit Surface(const string &name, Callbacks &callbacks)
+    explicit Surface(const string &name, UserCallbacks &user_callbacks, Callbacks &callbacks)
       : Module(MODULE_SURFACE_TYPE, name)
     {
-      this->callbacks.init_surface = callbacks.init_surface;
+      this->user_callbacks = user_callbacks;
+      this->callbacks = callbacks;
     }
 
     virtual int get_properties(const SurfaceProperty property, uint32_t &count, void* data) const = 0;
-    virtual int get_size(uint32_t &width, uint32_t &height) const = 0;
+    virtual int get_framebuffer_size(uint32_t &width, uint32_t &height) const = 0;
 
 #ifdef ME_USE_VULKAN
     virtual const char** vk_get_required_surface_extensions(uint32_t &count) const = 0;
     virtual int vk_create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const = 0;
 #endif
+
+    int register_resize_surface_callback(Callbacks::resize_surface_fn* resize_surface, void* ptr)
+    {
+      callbacks.resize_surface.push_back(pair(resize_surface, ptr));
+      return 0;
+    }
 
   };
 

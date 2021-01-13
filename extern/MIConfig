@@ -1,0 +1,31 @@
+LIBME_ROOT = "$(DIR)/libme"
+GLFW_ROOT = "$(DIR)/glfw"
+PORTAUDIO_ROOT = "$(DIR)/portaudio"
+
+if $PLATFORM == "android" then
+  ANDROID_NDK_ROOT = "/opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr"
+  include_path: [ "$(ANDROID_NDK_ROOT)/include" ]
+end
+
+include_path: [
+  "$(LIBME_ROOT)/include"
+  "$(GLFW_ROOT)/include"
+  "$(PORTAUDIO_ROOT)/include"
+]
+
+include: [
+  { pkg { flags [ "--cflags" ] name "glfw3" } }
+]
+
+library: [
+  { lib "me" } 
+  { lib "pthread" }
+  { lib "vulkan" }
+  { lib "portaudio" }
+  { lib "glfw3" pkg { static true flags [ "--libs" ] name "glfw3" } }
+]
+
+library_path: [
+  "$(LIBME_ROOT)"
+  "$(GLFW_ROOT)/src"
+]

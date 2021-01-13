@@ -71,6 +71,9 @@ int me::MurderEngine::tick_modules(Semaphore &semaphore)
 {
   for (Module* module : engine_bus)
   {
+    if (module->module_state != MODULE_ACTIVE_STATE)
+      continue;
+
     try {
       module->tick({&semaphore, &engine_bus, &engine_info});
     }catch(const exception &e)

@@ -3,14 +3,15 @@
 
 #include "Vulkan.hpp"
 
-bool me::Vulkan::has_extensions(const uint32_t extension_property_count,
-    const VkExtensionProperties* extension_properties,
+#include "../../util/vk_utils.hpp"
+
+bool me::Vulkan::has_extensions(const VkArray<VkExtensionProperties> &extension_properties,
     const vector<const char*> &required_extensions)
 {
   for (const char* required_extension : required_extensions)
   {
     bool has_extension = false;
-    for (uint32_t i = 0; i < extension_property_count; i++)
+    for (uint32_t i = 0; i < extension_properties.count; i++)
     {
       if (strcmp(required_extension, extension_properties[i].extensionName))
       {
@@ -25,14 +26,13 @@ bool me::Vulkan::has_extensions(const uint32_t extension_property_count,
   return true;
 }
 
-bool me::Vulkan::has_layers(const uint32_t layer_property_count,
-    const VkLayerProperties* layer_properties,
+bool me::Vulkan::has_layers(const VkArray<VkLayerProperties> &layer_properties,
     const vector<const char*> &required_layers)
 {
   for (const char* required : required_layers)
   {
     bool found = false;
-    for (uint32_t i = 0; i < layer_property_count; i++)
+    for (uint32_t i = 0; i < layer_properties.count; i++)
     {
       if (strcmp(required, layer_properties[i].layerName) == 0)
       {
@@ -47,14 +47,13 @@ bool me::Vulkan::has_layers(const uint32_t layer_property_count,
   return true;
 }
 
-bool me::Vulkan::has_queue_families(const uint32_t queue_family_property_count,
-    const VkQueueFamilyProperties* queue_family_properties,
+bool me::Vulkan::has_queue_families(const VkArray<VkQueueFamilyProperties> &queue_family_properties,
     const vector<VkQueueFlags> &required_queue_family_properties)
 {
   for (const uint32_t required : required_queue_family_properties)
   {
     bool found = false;
-    for (uint32_t i = 0; i < queue_family_property_count; i++)
+    for (uint32_t i = 0; i < queue_family_properties.count; i++)
     {
       if ((queue_family_properties[i].queueFlags & required) == required)
       {
@@ -69,13 +68,12 @@ bool me::Vulkan::has_queue_families(const uint32_t queue_family_property_count,
   return true;
 }
 
-bool me::Vulkan::has_present_mode(const uint32_t present_mode_count,
-    const VkPresentModeKHR* present_modes,
-    const VkPresentModeKHR present_mode)
+bool me::Vulkan::has_present_mode(const VkArray<VkPresentModeKHR> &present_modes,
+    const VkPresentModeKHR required_present_mode)
 {
-  for (uint32_t i = 0; i < present_mode_count; i++)
+  for (uint32_t i = 0; i < present_modes.count; i++)
   {
-    if (present_mode == present_modes[i])
+    if (required_present_mode == present_modes[i])
       return true;
   }
   return false;
@@ -83,17 +81,16 @@ bool me::Vulkan::has_present_mode(const uint32_t present_mode_count,
 
 int me::Vulkan::find_surface_format(const VkFormat color_format,
     const VkColorSpaceKHR color_space,
-    const uint32_t format_count,
-    const VkSurfaceFormatKHR* formats,
+    const VkArray<VkSurfaceFormatKHR> &formats,
     VkSurfaceFormatKHR& format)
 {
-  if (format_count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
+  if (formats.count == 1 && formats[0].format == VK_FORMAT_UNDEFINED)
   {
     format = { color_format, color_space };
     return 0;
   }
 
-  for (uint32_t i = 0; i < format_count; i++)
+  for (uint32_t i = 0; i < formats.count; i++)
   {
     if (formats[i].format == color_format && formats[i].colorSpace == color_space)
     {
@@ -102,8 +99,25 @@ int me::Vulkan::find_surface_format(const VkFormat color_format,
     }
   }
 
-  if (format_count > 0)
+  if (formats.count > 0)
     format = formats[0];
+  return 0;
+}
+
+int me::Vulkan::find_present_mode(const VkPresentModeKHR required_present_mode,
+    const VkArray<VkPresentModeKHR> &present_modes,
+    VkPresentModeKHR &present_mode)
+{
+  if (has_present_mode(present_modes, required_present_mode))
+    present_mode = required_present_mode;
+  return 0;
+}
+
+int me::Vulkan::find_image_extent(const VkExtent2D &current_extent,
+    VkExtent2D &image_extent)
+{
+  if (current_extent.width != UINT32_MAX)
+    image_extent = current_extent;
   return 0;
 }
 

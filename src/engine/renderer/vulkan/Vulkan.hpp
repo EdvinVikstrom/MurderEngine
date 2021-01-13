@@ -55,7 +55,7 @@ namespace me {
 
     VulkanAlloc alloc;
 
-    const Surface* me_surface;
+    Surface* me_surface;
     vector<const char*> required_extensions;
     vector<const char*> required_layers;
 
@@ -93,7 +93,7 @@ namespace me {
 
   public:
 
-    explicit Vulkan(const Surface* me_surface);
+    explicit Vulkan(Surface* me_surface);
 
     int register_shader(Shader* shader) override;
 
@@ -105,15 +105,18 @@ namespace me {
 
     int render(RenderInfo &render_info);
 
+    /* setup functions */
     int setup_extensions();
     int setup_layers();
     int setup_device_extensions();
     int setup_device_layers();
     int setup_instance(const EngineInfo* engine_info);
+    int setup_me_surface();
     int setup_physical_device();
     int setup_logical_device();
     int setup_surface();
     int setup_swapchain();
+    int setup_image_views();
     int setup_pipeline_layout();
     int setup_render_pass();
     int setup_shaders();
@@ -123,6 +126,8 @@ namespace me {
     int setup_command_buffers();
     int setup_synchronization();
 
+    int refresh_swapchains();
+
     int start_render_pass(VkCommandBuffer command_buffer, VkFramebuffer framebuffer);
 
     int setup_viewports();
@@ -131,28 +136,42 @@ namespace me {
     int setup_color_blend();
     int setup_dynamic();
 
+    /* cleanup functions */
+    int cleanup_instance();
+    int cleanup_logical_device();
+    int cleanup_surface();
+    int cleanup_swapchain();
+    int cleanup_image_views();
+    int cleanup_pipeline_layout();
+    int cleanup_render_pass();
+    int cleanup_shaders();
+    int cleanup_graphics_pipeline();
+    int cleanup_framebuffers();
+    int cleanup_command_pool();
+    int cleanup_command_buffers();
+    int cleanup_synchronization();
+
     int get_physical_device_infos(uint32_t &physical_device_count, VkPhysicalDevice*, PhysicalDeviceInfo*);
 
     int create_shader_module(const Shader*);
 
-    /* surface */
-    static int get_surface_formats(const VkPhysicalDevice, const VkSurfaceKHR, uint32_t &count, VkSurfaceFormatKHR*);
-    static int get_surface_present_modes(const VkPhysicalDevice, const VkSurfaceKHR, uint32_t &count, VkPresentModeKHR*);
-    static int get_surface_capabilities(const VkPhysicalDevice, const VkSurfaceKHR, VkSurfaceCapabilitiesKHR&);
+    static bool has_extensions(const VkArray<VkExtensionProperties>&, const vector<const char*> &required_extensions);
+    static bool has_layers(const VkArray<VkLayerProperties>&, const vector<const char*> &required_layers);
+    static bool has_queue_families(const VkArray<VkQueueFamilyProperties>&, const vector<VkQueueFlags> &required_queue_family_properties);
+    static bool has_present_mode(const VkArray<VkPresentModeKHR>&, const VkPresentModeKHR required_present_mode);
 
-
-    static bool has_extensions(const uint32_t extension_property_count, const VkExtensionProperties*, const vector<const char*> &required_extensions);
-    static bool has_layers(const uint32_t layer_property_count, const VkLayerProperties*, const vector<const char*> &required_layers);
-    static bool has_queue_families(const uint32_t queue_family_property_count, const VkQueueFamilyProperties*, const vector<VkQueueFlags> &required_queue_family_properties);
-    static bool has_present_mode(const uint32_t present_mode_count, const VkPresentModeKHR* present_modes, const VkPresentModeKHR present_mode);
-
-    static int find_surface_format(const VkFormat color_format, const VkColorSpaceKHR color_space, const uint32_t format_count, const VkSurfaceFormatKHR*, VkSurfaceFormatKHR&);
+    static int find_surface_format(const VkFormat color_format, const VkColorSpaceKHR color_space, const VkArray<VkSurfaceFormatKHR>&, VkSurfaceFormatKHR&);
+    static int find_present_mode(const VkPresentModeKHR, const VkArray<VkPresentModeKHR>&, VkPresentModeKHR&);
+    static int find_image_extent(const VkExtent2D &current_extent, VkExtent2D&);
     static int find_queue_families(const VkPhysicalDevice, const VkSurfaceKHR, const uint32_t queue_family_property_count, const VkQueueFamilyProperties*, QueueFamilyIndices&);
 
     static int get_extent(const VkExtent2D max_extent, const VkExtent2D min_extent, VkExtent2D &extent);
     static int get_shader_stage_flag(const ShaderType, VkShaderStageFlagBits&);
 
     static int get_logical_device_queue_create_info(const uint32_t family_index, const uint32_t queue_count, const float* queue_priorities, VkDeviceQueueCreateInfo&);
+
+    /* callbacks */
+    static int callback_surface_resize(uint32_t width, uint32_t height, void* ptr);
 
   protected:
 
