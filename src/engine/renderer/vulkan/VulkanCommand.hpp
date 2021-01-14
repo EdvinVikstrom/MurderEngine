@@ -78,9 +78,6 @@ int me::Vulkan::start_render_pass(VkCommandBuffer command_buffer, VkFramebuffer 
   render_pass_begin_info.clearValueCount = clear_value_count;
   render_pass_begin_info.pClearValues = clear_values;
 
-  /* begin render pass */
-  vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-
   const size_t vertex_buffer_count = data_storage.meshes.size();
   VkBuffer vertex_buffers[vertex_buffer_count];
   VkDeviceSize offsets[vertex_buffer_count];
@@ -90,6 +87,8 @@ int me::Vulkan::start_render_pass(VkCommandBuffer command_buffer, VkFramebuffer 
     offsets[i] = 0;
   }
 
+  vkCmdBeginRenderPass(command_buffer, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
   vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline_info.pipeline);
   vkCmdBindVertexBuffers(command_buffer, 0, vertex_buffer_count, vertex_buffers, offsets);
 
@@ -97,6 +96,7 @@ int me::Vulkan::start_render_pass(VkCommandBuffer command_buffer, VkFramebuffer 
     vkCmdDraw(command_buffer, static_cast<uint32_t>(mesh->vertices.size()), 1, 0, 0);
 
   vkCmdEndRenderPass(command_buffer);
+
   return 0;
 }
 

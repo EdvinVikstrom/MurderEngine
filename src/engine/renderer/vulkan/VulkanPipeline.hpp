@@ -1,4 +1,5 @@
 #include "Vulkan.inc"
+#include <vulkan/vulkan_core.h>
 
 /* <--- SETUP ---> */
 int me::Vulkan::setup_image_views()
@@ -15,10 +16,10 @@ int me::Vulkan::setup_image_views()
     image_view_create_info.image = swapchain_info.images[i];
     image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
     image_view_create_info.format = swapchain_info.surface_format.format;
-    image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_R;
-    image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_G;
-    image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_B;
-    image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_A;
+    image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
     image_view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     image_view_create_info.subresourceRange.baseMipLevel = 0;
     image_view_create_info.subresourceRange.levelCount = 1;
@@ -120,9 +121,9 @@ int me::Vulkan::setup_shaders()
   for (const Shader* shader : shader_info.shaders)
     create_shader_module(shader);
 
-  shader_info.vertex_input_binding_description.binding = 0;
-  shader_info.vertex_input_binding_description.stride = sizeof(Vertex);
-  shader_info.vertex_input_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  shader_info.vertex_input_binding_descriptions[0].binding = 0;
+  shader_info.vertex_input_binding_descriptions[0].stride = sizeof(Vertex);
+  shader_info.vertex_input_binding_descriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
   /* position */
   shader_info.vertex_input_attribute_descriptions[0].binding = 0;
@@ -140,7 +141,7 @@ int me::Vulkan::setup_shaders()
   shader_info.vertex_input_attribute_descriptions[2].binding = 0;
   shader_info.vertex_input_attribute_descriptions[2].location = 2;
   shader_info.vertex_input_attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-  shader_info.vertex_input_attribute_descriptions[2].offset = offsetof(Vertex, texture);
+  shader_info.vertex_input_attribute_descriptions[2].offset = offsetof(Vertex, tex_coord);
 
   /* color */
   shader_info.vertex_input_attribute_descriptions[3].binding = 0;
@@ -148,19 +149,20 @@ int me::Vulkan::setup_shaders()
   shader_info.vertex_input_attribute_descriptions[3].format = VK_FORMAT_R32G32B32A32_SFLOAT;
   shader_info.vertex_input_attribute_descriptions[3].offset = offsetof(Vertex, color);
 
-  shader_info.vertex_input_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  shader_info.vertex_input_state.pNext = nullptr;
-  shader_info.vertex_input_state.flags = 0;
-  shader_info.vertex_input_state.vertexBindingDescriptionCount = 1;
-  shader_info.vertex_input_state.pVertexBindingDescriptions = &shader_info.vertex_input_binding_description;
-  shader_info.vertex_input_state.vertexAttributeDescriptionCount = static_cast<uint32_t>(shader_info.vertex_input_attribute_descriptions.size());
-  shader_info.vertex_input_state.pVertexAttributeDescriptions = shader_info.vertex_input_attribute_descriptions.data();
 
-  shader_info.input_assembly_state.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-  shader_info.input_assembly_state.pNext = nullptr;
-  shader_info.input_assembly_state.flags = 0;
-  shader_info.input_assembly_state.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-  shader_info.input_assembly_state.primitiveRestartEnable = VK_FALSE;
+  shader_info.vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+  shader_info.vertex_input_state_create_info.pNext = nullptr;
+  shader_info.vertex_input_state_create_info.flags = 0;
+  shader_info.vertex_input_state_create_info.vertexBindingDescriptionCount = 1;
+  shader_info.vertex_input_state_create_info.pVertexBindingDescriptions = shader_info.vertex_input_binding_descriptions;
+  shader_info.vertex_input_state_create_info.vertexAttributeDescriptionCount = 4; 
+  shader_info.vertex_input_state_create_info.pVertexAttributeDescriptions = shader_info.vertex_input_attribute_descriptions;
+
+  shader_info.input_assembly_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+  shader_info.input_assembly_state_create_info.pNext = nullptr;
+  shader_info.input_assembly_state_create_info.flags = 0;
+  shader_info.input_assembly_state_create_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+  shader_info.input_assembly_state_create_info.primitiveRestartEnable = VK_FALSE;
   return 0;
 }
 
@@ -180,8 +182,8 @@ int me::Vulkan::setup_graphics_pipeline()
   graphics_pipeline_create_info.flags = 0;
   graphics_pipeline_create_info.stageCount = static_cast<uint32_t>(shader_info.pipeline_shader_stage_create_infos.size());
   graphics_pipeline_create_info.pStages = shader_info.pipeline_shader_stage_create_infos.data();
-  graphics_pipeline_create_info.pVertexInputState = &shader_info.vertex_input_state;
-  graphics_pipeline_create_info.pInputAssemblyState = &shader_info.input_assembly_state;
+  graphics_pipeline_create_info.pVertexInputState = &shader_info.vertex_input_state_create_info;
+  graphics_pipeline_create_info.pInputAssemblyState = &shader_info.input_assembly_state_create_info;
   graphics_pipeline_create_info.pViewportState = &viewport_info.pipline_viewport_stage_create_info;
   graphics_pipeline_create_info.pRasterizationState = &rasterizer_info.pipeline_rasterization_state_create_info;
   graphics_pipeline_create_info.pMultisampleState = &multisampling_info.pipeline_multisample_state_create_info;

@@ -6,6 +6,7 @@
 /* <--- SETUP ---> */
 int me::Vulkan::setup_vertex_buffers()
 {
+  logger.debug("> SETUP_VERTEX_BUFFERS");
   for (Mesh* mesh : data_storage.meshes)
     create_vertex_buffer(mesh);
   return 0;
@@ -19,7 +20,7 @@ int me::Vulkan::create_vertex_buffer(Mesh* mesh)
   buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_create_info.pNext = nullptr;
   buffer_create_info.flags = 0;
-  buffer_create_info.size = sizeof(Vertex) * mesh->vertices.size();
+  buffer_create_info.size = mesh->vertices.size() * sizeof(Vertex);
   buffer_create_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
   buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
   buffer_create_info.queueFamilyIndexCount = 0;
@@ -50,12 +51,13 @@ int me::Vulkan::create_vertex_buffer(Mesh* mesh)
   vkBindBufferMemory(logical_device_info.device, mesh->vertex_buffer, memory_info.vertex_buffer_memory, 0);
 
 
-  void* data;
-  result = vkMapMemory(logical_device_info.device, memory_info.vertex_buffer_memory, 0, buffer_create_info.size, 0, &data);
+  Vertex* vertex_data;
+  result = vkMapMemory(logical_device_info.device, memory_info.vertex_buffer_memory, 0, buffer_create_info.size, 0, (void**) &vertex_data);
   if (result != VK_SUCCESS)
     throw exception("failed to map memory [%s]", vk_utils_result_string(result));
   
-  memcpy(data, mesh->vertices.data(), buffer_create_info.size);
+  for (size_t i = 0; i < mesh->vertices.size(); i++)
+    vertex_data[i] = mesh->vertices.at(i);
 
   vkUnmapMemory(logical_device_info.device, memory_info.vertex_buffer_memory);
 

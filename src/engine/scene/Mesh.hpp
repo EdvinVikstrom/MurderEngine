@@ -14,7 +14,7 @@ namespace me {
   struct Vertex {
     math::vec3f position;
     math::vec3f normal;
-    math::vec2f texture;
+    math::vec2f tex_coord;
     math::vec4f color;
   };
 

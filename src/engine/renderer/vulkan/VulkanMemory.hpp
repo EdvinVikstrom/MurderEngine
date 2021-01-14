@@ -4,6 +4,7 @@
 /* <--- SETUP ---> */
 int me::Vulkan::setup_memory()
 {
+  logger.debug("> SETUP_MEMORY");
   return 0;
 }
 
@@ -60,8 +61,9 @@ int me::Vulkan::get_memory_type(VkPhysicalDevice physical_device,
 
   for (uint32_t i = 0; i < physical_device_memory_properties.memoryTypeCount; i++)
   {
-    const VkMemoryType &mem_type = physical_device_memory_properties.memoryTypes[i];
-    if (type_filter & (1 << 1) && (mem_type.propertyFlags & memory_property_flags) == memory_property_flags)
+    const VkMemoryType mem_type = physical_device_memory_properties.memoryTypes[i];
+    if (type_filter & (1 << i) &&
+	(physical_device_memory_properties.memoryTypes[i].propertyFlags & memory_property_flags) == memory_property_flags)
     {
       memory_type = i;
       return 0;
@@ -75,8 +77,6 @@ int me::Vulkan::get_memory_type(VkPhysicalDevice physical_device,
 /* <--- CLEANUP ---> */
 int me::Vulkan::cleanup_memory()
 {
-  for (const Mesh* mesh : data_storage.meshes)
-    vkDestroyBuffer(logical_device_info.device, mesh->vertex_buffer, nullptr);
   vkFreeMemory(logical_device_info.device, memory_info.vertex_buffer_memory, nullptr);
   return 0;
 }

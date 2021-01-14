@@ -109,10 +109,10 @@ struct DynamicInfo {
 struct ShaderInfo {
   vector<Shader*> shaders;
   vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stage_create_infos;
-  VkVertexInputBindingDescription vertex_input_binding_description;
-  me::array<VkVertexInputAttributeDescription, 4> vertex_input_attribute_descriptions;
-  VkPipelineVertexInputStateCreateInfo vertex_input_state;
-  VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
+  VkVertexInputBindingDescription vertex_input_binding_descriptions[1];
+  VkVertexInputAttributeDescription vertex_input_attribute_descriptions[4];
+  VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info;
+  VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info;
 };
 
 struct RenderInfo {
