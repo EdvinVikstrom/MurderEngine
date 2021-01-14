@@ -35,6 +35,7 @@ else
   define: [ "NDEBUG" ]
 end
 
+flags: [ "-Wall" ]
 files: $sources
 makefile: "$(DIR)/Makefile"
 ycm_config: "$(DIR)/.ycm_extra_conf.py"

@@ -14,7 +14,14 @@ vec3 vertices[3] = {
   {-0.5F, 0.5F, 0.0F}
 };
 
-void main() {
+vec3 colors[3] = {
+  {0.0F, 1.0F, 1.0F},
+  {1.0F, 0.0F, 1.0F},
+  {1.0F, 1.0F, 0.0F}
+};
+
+void main()
+{
   gl_Position = vec4(vertices[gl_VertexIndex], 0.0F);
-  frag_color = in_color;
+  frag_color = vec4(colors[gl_VertexIndex], 1.0F);
 }

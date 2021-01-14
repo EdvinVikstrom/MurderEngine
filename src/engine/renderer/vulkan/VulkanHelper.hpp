@@ -159,26 +159,4 @@ int me::Vulkan::get_extent(const VkExtent2D max_extent,
   return 0;
 }
 
-int me::Vulkan::get_shader_stage_flag(const ShaderType shader_type,
-    VkShaderStageFlagBits &shader_stage_flag_bits)
-{
-  switch (shader_type)
-  {
-    case SHADER_VERTEX:
-      shader_stage_flag_bits = VK_SHADER_STAGE_VERTEX_BIT;
-      break;
-    case SHADER_FRAGMENT:
-      shader_stage_flag_bits = VK_SHADER_STAGE_FRAGMENT_BIT;
-      break;
-    case SHADER_GEOMETRY:
-      shader_stage_flag_bits = VK_SHADER_STAGE_GEOMETRY_BIT;
-      break;
-  }
-  return 0;
-}
-
-
-
-
-
 #endif

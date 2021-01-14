@@ -19,10 +19,12 @@ namespace me {
 
   public:
 
-    AndroidSurface(Callbacks &callbacks);
+    AndroidSurface(UserCallbacks &user_callbacks, Callbacks &callbacks);
 
     int get_properties(const SurfaceProperty property, uint32_t &count, void* data) const override;
-    int get_size(uint32_t &width, uint32_t &height) const override;
+    int get_framebuffer_size(uint32_t &width, uint32_t &height) const override;
+
+    int notify() const override;
 
     const char** vk_get_required_surface_extensions(uint32_t &count) const override;
     int vk_create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const override;

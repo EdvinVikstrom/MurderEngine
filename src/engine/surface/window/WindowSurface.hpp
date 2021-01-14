@@ -24,6 +24,8 @@ namespace me {
     int get_properties(const SurfaceProperty property, uint32_t &count, void* data) const override;
     int get_framebuffer_size(uint32_t &width, uint32_t &height) const override;
 
+    int notify() const override;
+
     const char** vk_get_required_surface_extensions(uint32_t &count) const override;
     int vk_create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const override;
 
@@ -35,6 +37,7 @@ namespace me {
 
     static void glfw_error_callback(int code, const char* description);
     static void glfw_framebuffer_size_callback(GLFWwindow* glfw_window, int width, int height);
+    static void glfw_window_refresh_callback(GLFWwindow* glfw_window);
 
   };
 

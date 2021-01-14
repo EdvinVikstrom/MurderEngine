@@ -15,17 +15,6 @@
  *|____________________
  */
 
-static me::ShaderType get_shader_type(const me::string_view &str)
-{
-  if (str == "vertex")
-    return me::SHADER_VERTEX;
-  else if (str == "fragment")
-    return me::SHADER_FRAGMENT;
-  else if (str == "geometry")
-    return me::SHADER_GEOMETRY;
-  return me::SHADER_VERTEX;
-}
-
 int me::format::shader_read(const string &source, const Buffer &buffer, const ShaderType shader_type, Shader_Result &result)
 {
   const size_t data_length = buffer.seek_end();

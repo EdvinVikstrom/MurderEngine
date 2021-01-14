@@ -2,8 +2,8 @@
 #include "android/native_window.h"
 #include <vulkan/vulkan_android.h>
 
-me::AndroidSurface::AndroidSurface(Callbacks &callbacks)
-  : Surface("", callbacks), logger("android")
+me::AndroidSurface::AndroidSurface(UserCallbacks &user_callbacks, Callbacks &callbacks)
+  : Surface("", user_callbacks, callbacks), logger("android")
 {
 }
 
@@ -28,10 +28,15 @@ int me::AndroidSurface::get_properties(const SurfaceProperty property, uint32_t 
   return 0;
 }
 
-int me::AndroidSurface::get_size(uint32_t &width, uint32_t &height) const
+int me::AndroidSurface::get_framebuffer_size(uint32_t &width, uint32_t &height) const
 {
   width = ANativeWindow_getWidth(android_window);
   height = ANativeWindow_getHeight(android_window);
+  return 0;
+}
+
+int me::AndroidSurface::notify() const
+{
   return 0;
 }
 

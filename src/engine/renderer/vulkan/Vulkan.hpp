@@ -183,7 +183,6 @@ namespace me {
     static int find_queue_families(const VkPhysicalDevice, const VkSurfaceKHR, const uint32_t queue_family_property_count, const VkQueueFamilyProperties*, QueueFamilyIndices&);
 
     static int get_extent(const VkExtent2D max_extent, const VkExtent2D min_extent, VkExtent2D &extent);
-    static int get_shader_stage_flag(const ShaderType, VkShaderStageFlagBits&);
     static int get_memory_type(const VkPhysicalDevice, uint32_t type_filter, VkMemoryPropertyFlags, uint32_t &memory_type);
 
     /* callbacks */

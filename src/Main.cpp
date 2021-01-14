@@ -1,5 +1,6 @@
 /* ignore the mess just testing */
 
+#include "engine/EngineBus.hpp"
 #include "engine/MurderEngine.hpp"
 #include "engine/audio/AudioSystem.hpp"
 #include "engine/renderer/Shader.hpp"
@@ -61,7 +62,12 @@ int main(int argc, char** argv)
     .modules = modules
   };
 
-  me::MurderEngine engine(engine_info);
+  me::EngineBus engine_bus = {
+    .module_count = engine_info.module_count,
+    .modules = engine_info.modules
+  };
+
+  me::MurderEngine engine(engine_info, engine_bus);
   engine.initialize(argc, argv);
   return engine.terminate();
 }

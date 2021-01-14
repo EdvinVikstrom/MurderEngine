@@ -223,7 +223,12 @@ int me::Vulkan::create_shader_module(const Shader* shader)
     throw exception("failed to create shader module [%s]", vk_utils_result_string(result));
 
   VkShaderStageFlagBits shader_stage_flag_bits;
-  get_shader_stage_flag(shader->get_type(), shader_stage_flag_bits);
+  switch (shader->get_type())
+  {
+    case SHADER_VERTEX: shader_stage_flag_bits = VK_SHADER_STAGE_VERTEX_BIT; break;
+    case SHADER_FRAGMENT: shader_stage_flag_bits = VK_SHADER_STAGE_FRAGMENT_BIT; break;
+    case SHADER_GEOMETRY: shader_stage_flag_bits = VK_SHADER_STAGE_GEOMETRY_BIT; break;
+  }
 
   VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info = { };
   pipeline_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

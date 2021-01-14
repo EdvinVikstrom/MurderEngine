@@ -18,7 +18,8 @@ namespace me {
   };
 
   enum ModuleSemaphoreFlags {
-    MODULE_SEMAPHORE_TERMINATE_FLAG = 1
+    MODULE_SEMAPHORE_TERMINATE_FLAG = 1,
+    MODULE_SEMAPHORE_NOTIFY_FLAG = 1 << 1
   };
 
   enum ModuleState {

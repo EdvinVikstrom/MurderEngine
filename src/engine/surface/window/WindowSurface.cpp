@@ -1,6 +1,4 @@
 #include "WindowSurface.hpp"
-#include "GLFW/glfw3.h"
-#include "WindowSurface.hpp"
 
 #include "../../util/vk_utils.hpp"
 
@@ -27,6 +25,7 @@ int me::WindowSurface::initialize(const ModuleInfo module_info)
   glfw_window = glfwCreateWindow(Surface::config.width, Surface::config.height, Surface::config.title, nullptr, nullptr);
   glfwSetWindowUserPointer(glfw_window, this);
   glfwSetFramebufferSizeCallback(glfw_window, glfw_framebuffer_size_callback);
+  glfwSetWindowRefreshCallback(glfw_window, glfw_window_refresh_callback);
   return 0;
 }
 
@@ -59,6 +58,12 @@ int me::WindowSurface::get_framebuffer_size(uint32_t &width, uint32_t &height) c
   glfwGetFramebufferSize(glfw_window,
       reinterpret_cast<int*>(&width),
       reinterpret_cast<int*>(&height));
+  return 0;
+}
+
+int me::WindowSurface::notify() const
+{
+  glfwRequestWindowAttention(glfw_window);
   return 0;
 }
 
@@ -105,4 +110,9 @@ void me::WindowSurface::glfw_framebuffer_size_callback(GLFWwindow* glfw_window, 
     instance->Surface::user_callbacks.resize_surface(width, height);
   for (pair<Surface::Callbacks::resize_surface_fn*, void*> &resize_surface : instance->Surface::callbacks.resize_surface)
     resize_surface.first(width, height, resize_surface.second);
+}
+
+void me::WindowSurface::glfw_window_refresh_callback(GLFWwindow* glfw_window)
+{
+  WindowSurface* instance = reinterpret_cast<WindowSurface*>(glfwGetWindowUserPointer(glfw_window));
 }

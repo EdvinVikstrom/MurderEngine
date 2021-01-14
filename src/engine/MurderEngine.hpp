@@ -26,7 +26,7 @@ namespace me {
 
   public:
 
-    explicit MurderEngine(const EngineInfo &engine_info);
+    explicit MurderEngine(const EngineInfo &engine_info, const EngineBus &engine_bus);
 
     int initialize(int argc, char** argv);
     int terminate();

@@ -63,6 +63,8 @@ namespace me {
     virtual int get_properties(const SurfaceProperty property, uint32_t &count, void* data) const = 0;
     virtual int get_framebuffer_size(uint32_t &width, uint32_t &height) const = 0;
 
+    virtual int notify() const = 0;
+
 #ifdef ME_USE_VULKAN
     virtual const char** vk_get_required_surface_extensions(uint32_t &count) const = 0;
     virtual int vk_create_surface(VkInstance instance, const VkAllocationCallbacks* allocator, VkSurfaceKHR* surface) const = 0;

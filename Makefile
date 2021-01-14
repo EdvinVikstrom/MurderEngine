@@ -3,7 +3,7 @@ BUILD = build
 OUTNAME = MurderEngine
 CC = g++
 
-CFLAGS = -g -O0 -std=c++20
+CFLAGS = -g -O0 -std=c++20 -Wall
 LIBS = -lme \
 	-lpthread \
 	-lvulkan \

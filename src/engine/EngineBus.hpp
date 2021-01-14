@@ -5,16 +5,10 @@
 
 namespace me {
 
-  class EngineBus {
-
-  protected:
+  struct EngineBus {
 
     const uint32_t module_count;
     class Module** modules;
-
-  public:
-
-    EngineBus(const uint32_t module_count, class Module** modules);
 
     class Module** begin() const;
     class Module** end() const;

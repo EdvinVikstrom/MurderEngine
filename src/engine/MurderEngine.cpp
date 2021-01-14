@@ -5,22 +5,30 @@
 #include "audio/AudioSystem.hpp"
 
 /* class MurderEngine */
-me::MurderEngine::MurderEngine(const EngineInfo &engine_info)
-  : engine_info(engine_info), engine_bus(engine_info.module_count, engine_info.modules), logger("Engine")
+me::MurderEngine::MurderEngine(const EngineInfo &engine_info, const EngineBus &engine_bus)
+  : engine_info(engine_info), engine_bus(engine_bus), logger("Engine")
 {
 }
 
 int me::MurderEngine::initialize(int argc, char** argv)
 {
-  logger.trace_all();
   running = true;
+#ifndef NDEBUG
+  logger.trace(Logger::DEBUG, true);
+#endif
 
+  logger.info("running %s engine version [%u.%u.%u]", ME_ENGINE_NAME,
+      ME_ENGINE_VERSION_MAJOR, ME_ENGINE_VERSION_MINOR, ME_ENGINE_VERSION_PATCH);
+
+  /* initialize all modules */
   Semaphore init_semaphore;
   init_modules(init_semaphore);
   translate_semaphore(init_semaphore);
 
+  /* main loop */
   while (running)
   {
+    /* tick all modules */
     Semaphore tick_semaphore;
     tick_modules(tick_semaphore);
     translate_semaphore(tick_semaphore);
@@ -33,6 +41,7 @@ int me::MurderEngine::terminate()
   running = false;
   printf("terminating...\n");
 
+  /* terminate all modules */
   Semaphore terminate_semaphore;
   terminate_modules(terminate_semaphore);
   translate_semaphore(terminate_semaphore);
@@ -43,10 +52,17 @@ int me::MurderEngine::terminate()
 
 int me::MurderEngine::translate_semaphore(const Semaphore &semaphore)
 {
+  /* terminate */
   if (semaphore.flags & MODULE_SEMAPHORE_TERMINATE_FLAG)
   {
     logger.debug("received '%s' flag", module_semaphore_flag_name(MODULE_SEMAPHORE_TERMINATE_FLAG));
-    terminate();
+    if (running)
+      terminate();
+  }
+
+  /* notify */
+  if (semaphore.flags & MODULE_SEMAPHORE_NOTIFY_FLAG)
+  {
   }
   return 0;
 }
@@ -102,11 +118,6 @@ int me::MurderEngine::terminate_modules(Semaphore &semaphore)
 /* end class MurderEngine */
 
 /* class EngineBus */
-me::EngineBus::EngineBus(const uint32_t module_count, class Module** modules)
-  : module_count(module_count), modules(modules)
-{
-}
-
 me::Module** me::EngineBus::begin() const
 {
   return modules;
