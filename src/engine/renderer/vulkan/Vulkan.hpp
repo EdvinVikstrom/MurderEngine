@@ -1,7 +1,7 @@
 #ifndef ME_VULKAN_HPP
   #define ME_VULKAN_HPP
 
-#include "VulkanMemory.hpp"
+#include "VulkanAlloc.hpp"
 
 #include "../Renderer.hpp"
 #include "../../surface/Surface.hpp"
@@ -12,7 +12,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include <lme/optional.hpp>
-#include <lme/static_vector.hpp>
+#include <lme/array.hpp>
 
 namespace me {
 
@@ -20,6 +20,9 @@ namespace me {
 
   /* structs */
   protected:
+
+    struct VertexInfo;
+    struct MeshInfo;
 
     struct QueueFamilyIndices;
     struct InstanceInfo;
@@ -46,6 +49,9 @@ namespace me {
 #ifndef NDEBUG
     struct DebugInfo;
 #endif
+
+    struct MemoryInfo;
+    struct DataStorage;
 
 #include "Structs.hpp"
 
@@ -88,6 +94,8 @@ namespace me {
     DebugInfo debug_info;
 #endif
 
+    MemoryInfo memory_info;
+    DataStorage data_storage;
     RenderInfo render_info;
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -96,6 +104,7 @@ namespace me {
     explicit Vulkan(Surface* me_surface);
 
     int register_shader(Shader* shader) override;
+    int register_mesh(Mesh* mesh) override;
 
   protected:
 
@@ -111,10 +120,12 @@ namespace me {
     int setup_device_extensions();
     int setup_device_layers();
     int setup_instance(const EngineInfo* engine_info);
-    int setup_me_surface();
+    int setup_debug_messenger();
+    int setup_debug_report();
+    int setup_surface();
     int setup_physical_device();
     int setup_logical_device();
-    int setup_surface();
+    int setup_memory();
     int setup_swapchain();
     int setup_image_views();
     int setup_pipeline_layout();
@@ -123,6 +134,7 @@ namespace me {
     int setup_graphics_pipeline();
     int setup_framebuffers();
     int setup_command_pool();
+    int setup_vertex_buffers();
     int setup_command_buffers();
     int setup_synchronization();
 
@@ -138,7 +150,10 @@ namespace me {
 
     /* cleanup functions */
     int cleanup_instance();
+    int cleanup_debug_messenger();
+    int cleanup_debug_report();
     int cleanup_logical_device();
+    int cleanup_memory();
     int cleanup_surface();
     int cleanup_swapchain();
     int cleanup_image_views();
@@ -148,12 +163,14 @@ namespace me {
     int cleanup_graphics_pipeline();
     int cleanup_framebuffers();
     int cleanup_command_pool();
+    int cleanup_vertex_buffers();
     int cleanup_command_buffers();
     int cleanup_synchronization();
 
-    int get_physical_device_infos(uint32_t &physical_device_count, VkPhysicalDevice*, PhysicalDeviceInfo*);
-
     int create_shader_module(const Shader*);
+    int create_vertex_buffer(Mesh*);
+
+    int get_physical_device_infos(const VkArray<VkPhysicalDevice>&, PhysicalDeviceInfo*);
 
     static bool has_extensions(const VkArray<VkExtensionProperties>&, const vector<const char*> &required_extensions);
     static bool has_layers(const VkArray<VkLayerProperties>&, const vector<const char*> &required_layers);
@@ -167,26 +184,20 @@ namespace me {
 
     static int get_extent(const VkExtent2D max_extent, const VkExtent2D min_extent, VkExtent2D &extent);
     static int get_shader_stage_flag(const ShaderType, VkShaderStageFlagBits&);
-
-    static int get_logical_device_queue_create_info(const uint32_t family_index, const uint32_t queue_count, const float* queue_priorities, VkDeviceQueueCreateInfo&);
+    static int get_memory_type(const VkPhysicalDevice, uint32_t type_filter, VkMemoryPropertyFlags, uint32_t &memory_type);
 
     /* callbacks */
     static int callback_surface_resize(uint32_t width, uint32_t height, void* ptr);
-
-  protected:
-
-#ifndef NDEBUG
-    int setup_debug_messenger();
-    int setup_debug_report();
-
-    int terminate_debug_messenger();
-    int terminate_debug_report();
-
     static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugReportFlagsEXT, VkDebugReportObjectTypeEXT,
 	uint64_t object, size_t location, int32_t message_code,
 	const char* layer_prefix, const char* message, void* user_data);
     static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
 	const VkDebugUtilsMessengerCallbackDataEXT*, void* user_data);
+
+  protected:
+
+#ifndef NDEBUG
+
 #endif
 
   };

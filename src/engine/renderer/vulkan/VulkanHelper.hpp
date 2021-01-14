@@ -177,18 +177,8 @@ int me::Vulkan::get_shader_stage_flag(const ShaderType shader_type,
   return 0;
 }
 
-int me::Vulkan::get_logical_device_queue_create_info(const uint32_t family_index,
-    const uint32_t queue_count,
-    const float* queue_priorities,
-    VkDeviceQueueCreateInfo &device_create_info)
-{
-  device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  device_create_info.pNext = nullptr;
-  device_create_info.flags = 0;
-  device_create_info.queueFamilyIndex = family_index;
-  device_create_info.queueCount = queue_count;
-  device_create_info.pQueuePriorities = queue_priorities;
-  return 0;
-}
+
+
+
 
 #endif

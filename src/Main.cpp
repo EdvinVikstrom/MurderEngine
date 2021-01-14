@@ -85,6 +85,13 @@ int Sandbox::initialize(const me::ModuleInfo module_info)
 
   renderer->register_shader(vertex_shader);
   renderer->register_shader(fragment_shader);
+
+  me::vector<me::Vertex> vertices;
+  vertices.push_back({{0.0F, -0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {1.0F, 0.0F, 0.0F, 1.0F}});
+  vertices.push_back({{0.5F, 0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {1.0F, 0.0F, 0.0F, 1.0F}});
+  vertices.push_back({{-0.5F, 0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {1.0F, 0.0F, 0.0F, 1.0F}});
+  me::Mesh* mesh = new me::Mesh("main", vertices);
+  renderer->register_mesh(mesh);
   return 0;
 }
 

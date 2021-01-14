@@ -1,0 +1,9 @@
+/home/edvin/Dokument/MurderEngine/extern/portaudio/CMakeFiles/install/strip.dir
+/home/edvin/Dokument/MurderEngine/extern/portaudio/CMakeFiles/install/local.dir
+/home/edvin/Dokument/MurderEngine/extern/portaudio/CMakeFiles/install.dir
+/home/edvin/Dokument/MurderEngine/extern/portaudio/CMakeFiles/list_install_components.dir
+/home/edvin/Dokument/MurderEngine/extern/portaudio/CMakeFiles/rebuild_cache.dir
+/home/edvin/Dokument/MurderEngine/extern/portaudio/CMakeFiles/uninstall.dir
+/home/edvin/Dokument/MurderEngine/extern/portaudio/CMakeFiles/portaudio_static.dir
+/home/edvin/Dokument/MurderEngine/extern/portaudio/CMakeFiles/edit_cache.dir
+/home/edvin/Dokument/MurderEngine/extern/portaudio/CMakeFiles/portaudio.dir

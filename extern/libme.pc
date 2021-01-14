@@ -1,6 +1,0 @@
-
-Name: libme
-Description: A\ library\ made\ for\ Makeit\ and\ the\ MurderEngine
-Version: 2020
-Libs: 
-Cflags: -std=c++20

@@ -5,6 +5,10 @@
 #include <lme/vector.hpp>
 #include <lme/string.hpp>
 
+#ifdef ME_USE_VULKAN
+  #include <vulkan/vulkan.h>
+#endif
+
 namespace me {
 
   struct Vertex {
@@ -39,11 +43,17 @@ namespace me {
 
   class Mesh : public MeshReference {
 
-  private:
+  protected:
+
+#ifdef ME_USE_VULKAN
+    typedef VkBuffer VertexBuffer;
+#endif
+
+  public:
 
     const vector<Vertex> vertices;
 
-  public:
+    VertexBuffer vertex_buffer;
     
     Mesh(const string &source, const vector<Vertex> &vertices)
       : MeshReference(source, true), vertices(vertices)

@@ -1,5 +1,13 @@
 #include <vulkan/vulkan_core.h>
 
+struct VertexInfo {
+  VkVertexInputBindingDescription vertex_input_binding_description;
+  me::array<VkVertexInputAttributeDescription, 4> vertex_input_attribute_descriptions;
+};
+
+struct MeshInfo {
+};
+
 struct QueueFamilyIndices {
   me::optional<uint32_t> graphics;
   me::optional<uint32_t> present;
@@ -101,6 +109,8 @@ struct DynamicInfo {
 struct ShaderInfo {
   vector<Shader*> shaders;
   vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stage_create_infos;
+  VkVertexInputBindingDescription vertex_input_binding_description;
+  me::array<VkVertexInputAttributeDescription, 4> vertex_input_attribute_descriptions;
   VkPipelineVertexInputStateCreateInfo vertex_input_state;
   VkPipelineInputAssemblyStateCreateInfo input_assembly_state;
 };
@@ -128,3 +138,11 @@ struct DebugInfo {
   VkDebugUtilsMessengerEXT debug_utils_messenger;
 };
 #endif
+
+struct MemoryInfo {
+  VkDeviceMemory vertex_buffer_memory;
+};
+
+struct DataStorage {
+  vector<Mesh*> meshes;
+};
