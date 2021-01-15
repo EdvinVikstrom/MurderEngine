@@ -15,7 +15,7 @@ int me::Vulkan::setup_synchronization()
   alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.image_available);
   alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.render_finished);
   alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.in_flight);
-  alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.images_in_flight);
+  alloc.allocate_array(swapchain_info.images.count, synchronization_info.images_in_flight);
 
   VkSemaphoreCreateInfo semaphore_create_info = { };
   semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -26,6 +26,9 @@ int me::Vulkan::setup_synchronization()
   fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
   fence_create_info.pNext = nullptr;
   fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+  for (uint32_t i = 0; i < synchronization_info.images_in_flight.count; i++)
+    synchronization_info.images_in_flight[i] = VK_NULL_HANDLE;
 
   for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
   {
@@ -43,8 +46,6 @@ int me::Vulkan::setup_synchronization()
     result = vkCreateFence(logical_device_info.device, &fence_create_info, nullptr, &synchronization_info.in_flight[i]);
     if (result != VK_SUCCESS)
       throw exception("failed to create fence [%s]", vk_utils_result_string(result));
-
-    synchronization_info.images_in_flight[i] = VK_NULL_HANDLE;
   }
   return 0;
 }

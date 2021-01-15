@@ -2,6 +2,8 @@
 
 #include "EngineBus.hpp"
 #include "Module.hpp"
+#include "renderer/Renderer.hpp"
+#include "surface/Surface.hpp"
 #include "audio/AudioSystem.hpp"
 
 /* class MurderEngine */
@@ -63,6 +65,7 @@ int me::MurderEngine::translate_semaphore(const Semaphore &semaphore)
   /* notify */
   if (semaphore.flags & MODULE_SEMAPHORE_NOTIFY_FLAG)
   {
+    engine_bus.get_active_surface_module()->notify();
   }
   return 0;
 }
@@ -148,6 +151,11 @@ me::Module* me::EngineBus::get_module(const uint32_t module_type) const
   }
 
   throw exception("no module found with the type '%s'", module_type_name((ModuleTypes) module_type));
+}
+
+me::Surface* me::EngineBus::get_active_surface_module() const
+{
+  return (Surface*) get_module(MODULE_SURFACE_TYPE);
 }
 
 me::Renderer* me::EngineBus::get_active_renderer_module() const
