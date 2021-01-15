@@ -64,7 +64,7 @@ int me::Vulkan::setup_swapchain()
   swapchain_create_info.presentMode = present_mode;
   swapchain_create_info.clipped = VK_TRUE;
   swapchain_create_info.oldSwapchain = VK_NULL_HANDLE; /* TODO */
- 
+
   VkResult result = vkCreateSwapchainKHR(logical_device_info.device, &swapchain_create_info, nullptr, &swapchain_info.swapchain);
   if (result != VK_SUCCESS)
     throw exception("failed to create swapchain [%s]", vk_utils_result_string(result));

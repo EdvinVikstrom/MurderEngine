@@ -10,7 +10,7 @@ int me::Vulkan::setup_memory()
 
 int me::Vulkan::setup_synchronization()
 {
-  logger.debug("> SETUP_SEMAPHORES");
+  logger.debug("> SETUP_SYNCHRONIZATION");
 
   alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.image_available);
   alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.render_finished);

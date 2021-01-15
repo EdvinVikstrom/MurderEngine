@@ -17,12 +17,12 @@ int me::WindowSurface::initialize(const ModuleInfo module_info)
 
   logger.info("using GLFW version [%s]", glfwGetVersionString());
 
-  if (Surface::user_callbacks.init_surface == nullptr)
+  if (user_callbacks.init_surface == nullptr)
     throw exception("'Surface::user_callbacks' cannot be nullptr");
-  Surface::user_callbacks.init_surface(Surface::config);
+  user_callbacks.init_surface(Surface::config);
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfw_window = glfwCreateWindow(Surface::config.width, Surface::config.height, Surface::config.title, nullptr, nullptr);
+  glfw_window = glfwCreateWindow(config.width, config.height, config.title, nullptr, nullptr);
   glfwSetWindowUserPointer(glfw_window, this);
   glfwSetFramebufferSizeCallback(glfw_window, glfw_framebuffer_size_callback);
   glfwSetWindowRefreshCallback(glfw_window, glfw_window_refresh_callback);
@@ -106,8 +106,8 @@ void me::WindowSurface::glfw_framebuffer_size_callback(GLFWwindow* glfw_window, 
 {
   WindowSurface* instance = reinterpret_cast<WindowSurface*>(glfwGetWindowUserPointer(glfw_window));
 
-  if (instance->Surface::user_callbacks.resize_surface != nullptr)
-    instance->Surface::user_callbacks.resize_surface(width, height);
+  if (instance->user_callbacks.resize_surface != nullptr)
+    instance->user_callbacks.resize_surface(width, height);
   for (pair<Surface::Callbacks::resize_surface_fn*, void*> &resize_surface : instance->Surface::callbacks.resize_surface)
     resize_surface.first(width, height, resize_surface.second);
 }

@@ -128,9 +128,9 @@ namespace me {
     int setup_memory();
     int setup_swapchain();
     int setup_image_views();
-    int setup_pipeline_layout();
     int setup_render_pass();
     int setup_shaders();
+    int setup_pipeline_layout();
     int setup_graphics_pipeline();
     int setup_framebuffers();
     int setup_command_pool();
@@ -170,17 +170,17 @@ namespace me {
     int create_shader_module(const Shader*);
     int create_vertex_buffer(Mesh*);
 
-    int get_physical_device_infos(const VkArray<VkPhysicalDevice>&, PhysicalDeviceInfo*);
+    int get_physical_device_infos(const array_proxy<VkPhysicalDevice>&, PhysicalDeviceInfo*);
 
-    static bool has_extensions(const VkArray<VkExtensionProperties>&, const vector<const char*> &required_extensions);
-    static bool has_layers(const VkArray<VkLayerProperties>&, const vector<const char*> &required_layers);
-    static bool has_queue_families(const VkArray<VkQueueFamilyProperties>&, const vector<VkQueueFlags> &required_queue_family_properties);
-    static bool has_present_mode(const VkArray<VkPresentModeKHR>&, const VkPresentModeKHR required_present_mode);
+    static bool has_extensions(const array_proxy<VkExtensionProperties>&, const vector<const char*> &required_extensions);
+    static bool has_layers(const array_proxy<VkLayerProperties>&, const vector<const char*> &required_layers);
+    static bool has_queue_families(const array_proxy<VkQueueFamilyProperties>&, const vector<VkQueueFlags> &required_queue_family_properties);
+    static bool has_present_mode(const array_proxy<VkPresentModeKHR>&, const VkPresentModeKHR required_present_mode);
 
-    static int find_surface_format(const VkFormat color_format, const VkColorSpaceKHR color_space, const VkArray<VkSurfaceFormatKHR>&, VkSurfaceFormatKHR&);
-    static int find_present_mode(const VkPresentModeKHR, const VkArray<VkPresentModeKHR>&, VkPresentModeKHR&);
+    static int find_surface_format(const VkFormat, const VkColorSpaceKHR, const array_proxy<VkSurfaceFormatKHR>&, VkSurfaceFormatKHR&);
+    static int find_present_mode(const VkPresentModeKHR, const array_proxy<VkPresentModeKHR>&, VkPresentModeKHR&);
     static int find_image_extent(const VkExtent2D &current_extent, VkExtent2D&);
-    static int find_queue_families(const VkPhysicalDevice, const VkSurfaceKHR, const uint32_t queue_family_property_count, const VkQueueFamilyProperties*, QueueFamilyIndices&);
+    static int find_queue_families(const VkPhysicalDevice, const VkSurfaceKHR, const array_proxy<VkQueueFamilyProperties>&, QueueFamilyIndices&);
 
     static int get_extent(const VkExtent2D max_extent, const VkExtent2D min_extent, VkExtent2D &extent);
     static int get_memory_type(const VkPhysicalDevice, uint32_t type_filter, VkMemoryPropertyFlags, uint32_t &memory_type);

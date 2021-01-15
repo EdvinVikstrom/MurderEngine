@@ -11,13 +11,14 @@ namespace me {
 
   protected:
 
-    MemPool<Mesh>* meshes;
+    MemoryAlloc allocator;
+    MemoryPool<Mesh> meshes;
 
     Renderer* renderer;
 
   public:
 
-    Scene();
+    Scene(const MemoryAlloc &allocator);
 
     int init(MurderEngine &engine);
     int destroy();

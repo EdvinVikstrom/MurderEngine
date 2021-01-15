@@ -8,7 +8,7 @@
 
 /* class MurderEngine */
 me::MurderEngine::MurderEngine(const EngineInfo &engine_info, const EngineBus &engine_bus)
-  : engine_info(engine_info), engine_bus(engine_bus), logger("Engine")
+  : engine_info(engine_info), engine_bus(engine_bus), allocator(4096 * 8), logger("Engine")
 {
 }
 

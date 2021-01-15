@@ -96,7 +96,6 @@ int me::Vulkan::start_render_pass(VkCommandBuffer command_buffer, VkFramebuffer 
     vkCmdDraw(command_buffer, static_cast<uint32_t>(mesh->vertices.size()), 1, 0, 0);
 
   vkCmdEndRenderPass(command_buffer);
-
   return 0;
 }
 

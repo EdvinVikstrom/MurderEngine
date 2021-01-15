@@ -1,32 +1,40 @@
 #ifndef ME_MEMORY_POOL_HPP
   #define ME_MEMORY_POOL_HPP
 
+#include "MemoryAlloc.hpp"
+
 namespace me {
 
   template<typename T>
-  class MemPool {
+  class MemoryPool {
   
-  private:
-  
-    size_t size;
-    T** pool;
-
   protected:
 
-    size_t find(T* ptr);
-  
+    MemoryAlloc allocator;
+
   public:
 
-    explicit MemPool(size_t size);
+    explicit MemoryPool()
+    {
+    }
+
+    explicit MemoryPool(MemoryAlloc &allocator)
+      : allocator(allocator)
+    {
+    }
   
-    T* alloc(size_t size);
-    T* realloc(T* old_memory, size_t size);
-    void free(T* memory);
+    T* allocate()
+    {
+      return allocator.alloc<T>(1);
+    }
+
+    void rewind(size_t length)
+    {
+      allocator.rewind(length);
+    }
   
   };
 
 }
-
-#include "MemoryPool_Impl.hpp"
 
 #endif

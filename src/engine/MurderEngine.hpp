@@ -3,6 +3,8 @@
 
 #include "EngineInfo.hpp"
 
+#include "memory/MemoryAlloc.hpp"
+
 #include "Logger.hpp"
 #include "Module.hpp"
 
@@ -23,6 +25,8 @@ namespace me {
 
     const EngineInfo engine_info;
     const EngineBus engine_bus;
+
+    MemoryAlloc allocator;
 
   public:
 

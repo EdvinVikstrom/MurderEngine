@@ -1,18 +1,14 @@
 #ifndef ME_VULKAN_ALLOC_HPP
   #define ME_VULKAN_ALLOC_HPP
 
+#include <lme/array.hpp>
+
+#include "../../memory/MemoryAlloc.hpp"
+
 namespace me {
 
   template<typename T>
-  struct VkArray {
-
-    uint32_t count;
-    T* ptr;
-
-    T& operator[](uint32_t index) const
-    {
-      return ptr[index];
-    }
+  struct VkArray : public array_t<T, uint32_t> {
 
   };
 
@@ -20,7 +16,18 @@ namespace me {
 
   protected:
 
+    MemoryAlloc allocator;
+
   public:
+
+    VulkanAlloc()
+    {
+    }
+
+    VulkanAlloc(MemoryAlloc allocator)
+      : allocator(allocator)
+    {
+    }
 
     template<typename T>
     VkArray<T>& allocate_array(uint32_t count, VkArray<T> &array);
@@ -32,10 +39,12 @@ namespace me {
 
 }
 
+
 template<typename T>
 me::VkArray<T>& me::VulkanAlloc::allocate_array(uint32_t count, VkArray<T> &array)
 {
   array.count = count;
+  //array.ptr = allocator.alloc<T>(count);
   array.ptr = new T[count];
   return array;
 }
@@ -43,8 +52,7 @@ me::VkArray<T>& me::VulkanAlloc::allocate_array(uint32_t count, VkArray<T> &arra
 template<typename T>
 me::VkArray<T>& me::VulkanAlloc::allocate_array(VkArray<T> &array)
 {
-  array.ptr = new T[array.count];
-  return array;
+  return allocate_array(array.count, array);
 }
 
 #endif

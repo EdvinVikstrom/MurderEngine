@@ -18,16 +18,20 @@ me::Vulkan::Vulkan(Surface* me_surface)
 
 int me::Vulkan::initialize(const ModuleInfo module_info)
 {
-  //logger.trace_all();
+#ifndef NDEBUG
+  //logger.trace(Logger::DEBUG, true);
+#endif
+
+  alloc = MemoryAlloc(module_info.allocator.child(2048));
 
   setup_extensions();
   setup_layers();
   setup_instance(module_info.engine_info);
+  setup_surface();
 #ifndef NDEBUG
   setup_debug_messenger();
   setup_debug_report();
 #endif
-  setup_surface();
   setup_device_extensions();
   setup_device_layers();
   setup_physical_device();

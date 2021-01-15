@@ -5,6 +5,8 @@
 #include "EngineBus.hpp"
 #include "EngineInfo.hpp"
 
+#include "memory/MemoryAlloc.hpp"
+
 #include <lme/string.hpp>
 
 namespace me {
@@ -32,6 +34,7 @@ namespace me {
     mutable Semaphore* semaphore;
     const EngineBus* engine_bus;
     const EngineInfo* engine_info;
+    const MemoryAlloc allocator;
   };
 
 

@@ -3,7 +3,7 @@ BUILD = build
 OUTNAME = MurderEngine
 CC = g++
 
-CFLAGS = -g -O0 -std=c++20 -Wall
+CFLAGS = -g -Wall -O0 -std=c++20
 LIBS = -lme \
 	-lpthread \
 	-lvulkan \
@@ -32,6 +32,7 @@ SOURCES = ./src/Main.cpp \
 	./src/engine/Logger.cpp \
 	./src/engine/renderer/vulkan/Vulkan.cpp \
 	./src/engine/surface/window/WindowSurface.cpp \
+	./src/engine/memory/MemoryAlloc.cpp \
 	./src/engine/scene/Scene.cpp \
 	./src/engine/audio/portaudio/PortAudio.cpp \
 	./src/engine/format/shader/shader_format.cpp

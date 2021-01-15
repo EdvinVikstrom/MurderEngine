@@ -104,9 +104,9 @@ int me::Vulkan::setup_logical_device()
 
 
 /* <--- HELPERS ---> */
-int me::Vulkan::get_physical_device_infos(const VkArray<VkPhysicalDevice> &physical_devices, PhysicalDeviceInfo* physical_device_infos)
+int me::Vulkan::get_physical_device_infos(const array_proxy<VkPhysicalDevice> &physical_devices, PhysicalDeviceInfo* physical_device_infos)
 {
-  for (uint32_t i = 0; i < physical_devices.count; i++)
+  for (uint32_t i = 0; i < physical_devices.size(); i++)
   {
     PhysicalDeviceInfo &physical_device_info = physical_device_infos[i];
     physical_device_info.device = physical_devices[i];
@@ -129,7 +129,7 @@ int me::Vulkan::get_physical_device_infos(const VkArray<VkPhysicalDevice> &physi
 	&physical_device_info.extensions.count, physical_device_info.extensions.ptr);
 
     find_queue_families(physical_devices[i], surface_info.surface,
-	physical_device_info.queue_family_properties.count, physical_device_info.queue_family_properties.ptr, physical_device_info.queue_family_indices);
+	physical_device_info.queue_family_properties, physical_device_info.queue_family_indices);
   }
   return 0;
 }

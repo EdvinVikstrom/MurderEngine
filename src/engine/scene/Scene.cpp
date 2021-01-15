@@ -1,8 +1,9 @@
 #include "Scene.hpp"
 
-me::Scene::Scene()
+me::Scene::Scene(const MemoryAlloc &allocator)
+  : allocator(allocator.child(1024 * 16))
 {
-  meshes = new MemPool<Mesh>(1024);
+  meshes = MemoryPool<Mesh>(this->allocator);
 }
 
 int me::Scene::init(MurderEngine &engine)
