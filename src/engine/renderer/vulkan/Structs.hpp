@@ -11,6 +11,7 @@ struct MeshInfo {
 struct QueueFamilyIndices {
   me::optional<uint32_t> graphics;
   me::optional<uint32_t> present;
+  me::optional<uint32_t> transfer;
 };
 
 struct InstanceInfo {
@@ -34,6 +35,7 @@ struct LogicalDeviceInfo {
 struct QueueInfo {
   VkQueue graphics_queue = VK_NULL_HANDLE;
   VkQueue present_queue = VK_NULL_HANDLE;
+  VkQueue transfer_queue = VK_NULL_HANDLE;
 };
 
 struct SurfaceInfo {
@@ -69,7 +71,12 @@ struct FramebufferInfo {
 };
 
 struct CommandPoolInfo {
-  VkCommandPool command_pool = VK_NULL_HANDLE;
+  VkCommandPool graphics_command_pool = VK_NULL_HANDLE;
+  VkCommandPool transfer_command_pool = VK_NULL_HANDLE;
+};
+
+struct CommandBufferInfo {
+  VkArray<VkCommandBuffer> draw_command_buffers;
 };
 
 struct SynchronizationInfo {
@@ -110,6 +117,7 @@ struct ShaderInfo {
   vector<Shader*> shaders;
   vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stage_create_infos;
   VkVertexInputBindingDescription vertex_input_binding_descriptions[1];
+  VkDescriptorSetLayoutBinding descriptor_set_layout_bindings[1];
   VkVertexInputAttributeDescription vertex_input_attribute_descriptions[4];
   VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info;
   VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info;
@@ -141,6 +149,8 @@ struct DebugInfo {
 
 struct MemoryInfo {
   VkDeviceMemory vertex_buffer_memory;
+  VkDeviceMemory index_buffer_memory;
+  VkDeviceMemory staging_buffer_memory;
 };
 
 struct DataStorage {

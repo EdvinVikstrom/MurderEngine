@@ -78,6 +78,7 @@ int me::Vulkan::get_memory_type(VkPhysicalDevice physical_device,
 int me::Vulkan::cleanup_memory()
 {
   vkFreeMemory(logical_device_info.device, memory_info.vertex_buffer_memory, nullptr);
+  vkFreeMemory(logical_device_info.device, memory_info.index_buffer_memory, nullptr);
   return 0;
 }
 

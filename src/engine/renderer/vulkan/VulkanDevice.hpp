@@ -58,11 +58,12 @@ int me::Vulkan::setup_logical_device()
   logger.debug("> SETUP_LOGICAL_DEVICE");
 
   /* get unique queue families */
-  uint32_t queue_families[2] = {
+  uint32_t queue_families[3] = {
     physical_device_info.queue_family_indices.graphics.value(),
-    physical_device_info.queue_family_indices.present.value()
+    physical_device_info.queue_family_indices.present.value(),
+    physical_device_info.queue_family_indices.transfer.value()
   };
-  set<uint32_t> unique_queue_families(2, queue_families);
+  set<uint32_t> unique_queue_families(3, queue_families);
 
   /* device queue create info(s) */
   uint32_t device_queue_count = unique_queue_families.size();
@@ -99,6 +100,7 @@ int me::Vulkan::setup_logical_device()
 
   vkGetDeviceQueue(logical_device_info.device, physical_device_info.queue_family_indices.graphics.value(), 0, &queue_info.graphics_queue);
   vkGetDeviceQueue(logical_device_info.device, physical_device_info.queue_family_indices.present.value(), 0, &queue_info.present_queue);
+  vkGetDeviceQueue(logical_device_info.device, physical_device_info.queue_family_indices.transfer.value(), 0, &queue_info.transfer_queue);
   return 0;
 }
 

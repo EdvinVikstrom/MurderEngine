@@ -17,6 +17,7 @@ namespace me {
     math::vec2f tex_coord;
     math::vec4f color;
   };
+  typedef uint32_t Index;
 
   class MeshReference {
     
@@ -47,16 +48,19 @@ namespace me {
 
 #ifdef ME_USE_VULKAN
     typedef VkBuffer VertexBuffer;
+    typedef VkBuffer IndexBuffer;
 #endif
 
   public:
 
     const vector<Vertex> vertices;
+    const vector<Index> indices;
 
     VertexBuffer vertex_buffer;
+    IndexBuffer index_buffer;
     
-    Mesh(const string &source, const vector<Vertex> &vertices)
-      : MeshReference(source, true), vertices(vertices)
+    Mesh(const string &source, const vector<Vertex> &vertices, const vector<Index> &indices)
+      : MeshReference(source, true), vertices(vertices), indices(indices)
     {
     }
 

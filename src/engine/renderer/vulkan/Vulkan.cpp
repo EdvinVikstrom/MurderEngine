@@ -126,7 +126,7 @@ int me::Vulkan::render(RenderInfo &render_info)
   /* get command buffers */
   static uint32_t command_buffer_count = 1;
   VkCommandBuffer command_buffers[command_buffer_count];
-  command_buffers[0] = this->command_buffers[image_index];
+  command_buffers[0] = command_buffer_info.draw_command_buffers[image_index];
 
   /* create signal semaphores */
   static uint32_t signal_semaphore_count = 1;

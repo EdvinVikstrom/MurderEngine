@@ -5,6 +5,124 @@
 
 #include "../../util/vk_utils.hpp"
 
+#include <memory.h>
+#include <vulkan/vulkan_core.h>
+
+int me::Vulkan::create_buffer(const VkPhysicalDevice physical_device,
+    const VkDevice device,
+    const VkDeviceSize buffer_size,
+    const VkBufferUsageFlags buffer_usage_flags,
+    const VkSharingMode sharing_mode,
+    const VkMemoryPropertyFlags memory_property_flags,
+    VkBuffer& buffer,
+    VkDeviceMemory& buffer_memory)
+{
+  VkBufferCreateInfo buffer_create_info = { };
+  buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  buffer_create_info.pNext = nullptr;
+  buffer_create_info.flags = 0;
+  buffer_create_info.size = buffer_size;
+  buffer_create_info.usage = buffer_usage_flags;
+  buffer_create_info.sharingMode = sharing_mode;
+  buffer_create_info.queueFamilyIndexCount = 0;
+  buffer_create_info.pQueueFamilyIndices = nullptr;
+
+  VkResult result = vkCreateBuffer(device, &buffer_create_info, nullptr, &buffer);
+  if (result != VK_SUCCESS)
+    throw exception("failed to create vertex buffer [%s]", vk_utils_result_string(result));
+
+  VkMemoryRequirements memory_requirements;
+  vkGetBufferMemoryRequirements(device, buffer, &memory_requirements);
+
+  uint32_t memory_type;
+  get_memory_type(physical_device, memory_requirements.memoryTypeBits, memory_property_flags, memory_type);
+
+  VkMemoryAllocateInfo buffer_memory_allocate_info = { };
+  buffer_memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+  buffer_memory_allocate_info.pNext = nullptr;
+  buffer_memory_allocate_info.allocationSize = memory_requirements.size;
+  buffer_memory_allocate_info.memoryTypeIndex = memory_type;
+
+  result = vkAllocateMemory(device, &buffer_memory_allocate_info, nullptr, &buffer_memory);
+  if (result != VK_SUCCESS)
+    throw exception("failed to allocate memory with mesh vertices(%lu) [%s]", buffer_size, result);
+
+  /* param[3]: offset */
+  vkBindBufferMemory(device, buffer, buffer_memory, 0);
+  return 0;
+}
+
+int me::Vulkan::copy_buffer(const VkDevice device,
+    const VkCommandPool command_pool,
+    const VkQueue queue,
+    const VkDeviceSize buffer_size,
+    const VkBuffer source_buffer,
+    const VkBuffer destination_buffer)
+{
+  VkCommandBufferAllocateInfo command_buffer_allocate_info = { };
+  command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  command_buffer_allocate_info.pNext = nullptr;
+  command_buffer_allocate_info.commandPool = command_pool;
+  command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  command_buffer_allocate_info.commandBufferCount = 1;
+
+  VkCommandBuffer command_buffer;
+  vkAllocateCommandBuffers(device, &command_buffer_allocate_info, &command_buffer);
+
+  VkCommandBufferBeginInfo command_buffer_begin_info = { };
+  command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  command_buffer_begin_info.pNext = nullptr;
+  command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+  command_buffer_begin_info.pInheritanceInfo = nullptr;
+
+  /* begin recording */
+  vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info);
+
+  VkBufferCopy buffer_copy_region = { };
+  buffer_copy_region.srcOffset = 0;
+  buffer_copy_region.dstOffset = 0;
+  buffer_copy_region.size = buffer_size;
+
+  vkCmdCopyBuffer(command_buffer, source_buffer, destination_buffer, 1, &buffer_copy_region);
+
+  /* stop recording */
+  vkEndCommandBuffer(command_buffer);
+
+  /* execute copy command */
+  uint32_t submit_info_count = 1;
+  VkSubmitInfo submit_infos[submit_info_count];
+  submit_infos[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submit_infos[0].pNext = nullptr;
+  submit_infos[0].waitSemaphoreCount = 0;
+  submit_infos[0].pWaitSemaphores = nullptr;
+  submit_infos[0].commandBufferCount = 1;
+  submit_infos[0].pCommandBuffers = &command_buffer;
+  submit_infos[0].signalSemaphoreCount = 0;
+  submit_infos[0].pSignalSemaphores = nullptr;
+
+  vkQueueSubmit(queue, submit_info_count, submit_infos, VK_NULL_HANDLE);
+  vkQueueWaitIdle(queue);
+
+  vkFreeCommandBuffers(device, command_pool, 1, &command_buffer);
+  return 0;
+}
+
+int me::Vulkan::map_buffer_memory(const VkDevice device,
+    const VkDeviceSize buffer_size,
+    const void* buffer_data,
+    const VkDeviceMemory device_memory)
+{
+  void* data;
+  VkResult result = vkMapMemory(device, device_memory, 0, buffer_size, 0, &data);
+  if (result != VK_SUCCESS)
+    throw exception("failed to map memory [%s]", vk_utils_result_string(result));
+
+  /* use flush instead */
+  memcpy(data, buffer_data, buffer_size);
+  vkUnmapMemory(device, device_memory);
+  return 0;
+}
+
 bool me::Vulkan::has_extensions(const array_proxy<VkExtensionProperties> &extension_properties,
     const vector<const char*> &required_extensions)
 {
@@ -133,6 +251,10 @@ int me::Vulkan::find_queue_families(const VkPhysicalDevice physical_device,
     {
       if (queue_family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
 	queue_family_indices.graphics.assign(i);
+
+      /* TODO: multiple queue families */
+      if (queue_family_properties[i].queueFlags & VK_QUEUE_TRANSFER_BIT)
+	queue_family_indices.transfer.assign(i);
 
       VkBool32 present_support = VK_FALSE;
       vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, surface, &present_support);

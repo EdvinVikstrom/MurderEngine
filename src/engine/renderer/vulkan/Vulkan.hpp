@@ -36,6 +36,7 @@ namespace me {
     struct GraphicsPipelineInfo;
     struct FramebufferInfo;
     struct CommandPoolInfo;
+    struct CommandBufferInfo;
     struct SynchronizationInfo;
     struct ViewportInfo;
     struct RasterizerInfo;
@@ -80,7 +81,7 @@ namespace me {
     GraphicsPipelineInfo graphics_pipeline_info;
     FramebufferInfo framebuffer_info;
     CommandPoolInfo command_pool_info;
-    VkArray<VkCommandBuffer> command_buffers;
+    CommandBufferInfo command_buffer_info;
     SynchronizationInfo synchronization_info;
 
     ViewportInfo viewport_info;
@@ -167,10 +168,18 @@ namespace me {
     int cleanup_command_buffers();
     int cleanup_synchronization();
 
+    int create_command_pool(const uint32_t queue_family_index, VkCommandPool&);
     int create_shader_module(const Shader*);
     int create_vertex_buffer(Mesh*);
+    int create_index_buffer(Mesh*);
 
     int get_physical_device_infos(const array_proxy<VkPhysicalDevice>&, PhysicalDeviceInfo*);
+
+    static int create_buffer(const VkPhysicalDevice, const VkDevice, const VkDeviceSize, const VkBufferUsageFlags,
+	const VkSharingMode, const VkMemoryPropertyFlags, VkBuffer&, VkDeviceMemory&);
+    static int copy_buffer(const VkDevice, const VkCommandPool, const VkQueue,
+	const VkDeviceSize buffer_size, const VkBuffer source_buffer, const VkBuffer destination_buffer);
+    static int map_buffer_memory(const VkDevice, const VkDeviceSize buffer_size, const void* buffer_data, const VkDeviceMemory);
 
     static bool has_extensions(const array_proxy<VkExtensionProperties>&, const vector<const char*> &required_extensions);
     static bool has_layers(const array_proxy<VkLayerProperties>&, const vector<const char*> &required_layers);

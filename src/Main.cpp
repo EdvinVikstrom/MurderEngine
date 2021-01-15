@@ -93,11 +93,18 @@ int Sandbox::initialize(const me::ModuleInfo module_info)
   renderer->register_shader(fragment_shader);
 
   me::vector<me::Vertex> vertices;
-  float scale = 1.0F;
-  vertices.push_back({{0.0F * scale, -0.5F * scale, 0.0F}, {0.0F * scale, -0.5F * scale, 0.0F}, {0.0F, 0.0F}, {1.0F, 0.0F, 0.0F, 1.0F}});
-  vertices.push_back({{0.5F * scale, 0.5F * scale, 0.0F}, {0.5F * scale, 0.5F * scale, 0.0F}, {0.0F, 0.0F}, {1.0F, 0.0F, 1.0F, 1.0F}});
-  vertices.push_back({{-0.5F * scale, 0.5F * scale, 0.0F}, {-0.5F * scale, 0.5F * scale, 0.0F}, {0.0F, 0.0F}, {1.0F, 1.0F, 0.0F, 1.0F}});
-  me::Mesh* mesh = new me::Mesh("main", vertices);
+  me::vector<me::Index> indices;
+  vertices.push_back({{-0.5F, -0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {1.0F, 0.0F, 0.0F, 1.0F}});
+  vertices.push_back({{0.5F, -0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {0.0F, 0.0F, 1.0F, 1.0F}});
+  vertices.push_back({{0.5F, 0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {1.0F, 1.0F, 0.0F, 1.0F}});
+  vertices.push_back({{-0.5F, 0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {0.0F, 1.0F, 0.0F, 1.0F}});
+  indices.push_back(0);
+  indices.push_back(1);
+  indices.push_back(2);
+  indices.push_back(2);
+  indices.push_back(3);
+  indices.push_back(0);
+  me::Mesh* mesh = new me::Mesh("main", vertices, indices);
   renderer->register_mesh(mesh);
   return 0;
 }

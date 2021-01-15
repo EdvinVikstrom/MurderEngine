@@ -125,6 +125,8 @@ int me::Vulkan::setup_shaders()
   shader_info.vertex_input_binding_descriptions[0].stride = sizeof(Vertex);
   shader_info.vertex_input_binding_descriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
+  /* <--- MESH ---> */
+
   /* position */
   shader_info.vertex_input_attribute_descriptions[0].binding = 0;
   shader_info.vertex_input_attribute_descriptions[0].location = 0;
