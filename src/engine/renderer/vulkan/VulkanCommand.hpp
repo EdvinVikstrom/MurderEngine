@@ -15,8 +15,8 @@ int me::Vulkan::setup_command_buffers()
 {
   logger.debug("> SETUP_COMMAND_BUFFERS");
 
-  uint32_t draw_command_buffer_count = framebuffer_info.framebuffers.count;
-  alloc.allocate_array(draw_command_buffer_count, command_buffer_info.draw_command_buffers);
+  uint32_t draw_command_buffer_count = framebuffer_info.framebuffers.size();
+  command_buffer_info.draw_command_buffers.resize(draw_command_buffer_count);
 
   VkCommandBufferAllocateInfo command_buffer_allocate_info = { };
   command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -25,7 +25,7 @@ int me::Vulkan::setup_command_buffers()
   command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   command_buffer_allocate_info.commandBufferCount = draw_command_buffer_count;
 
-  VkResult result = vkAllocateCommandBuffers(logical_device_info.device, &command_buffer_allocate_info, command_buffer_info.draw_command_buffers.ptr);
+  VkResult result = vkAllocateCommandBuffers(logical_device_info.device, &command_buffer_allocate_info, command_buffer_info.draw_command_buffers.data());
   if (result != VK_SUCCESS)
     throw exception("failed to allocate command buffers [%s]", vk_utils_result_string(result));
 
@@ -130,6 +130,6 @@ int me::Vulkan::cleanup_command_pool()
 int me::Vulkan::cleanup_command_buffers()
 {
   vkFreeCommandBuffers(logical_device_info.device, command_pool_info.graphics_command_pool,
-      command_buffer_info.draw_command_buffers.count, command_buffer_info.draw_command_buffers.ptr);
+      command_buffer_info.draw_command_buffers.size(), command_buffer_info.draw_command_buffers.data());
   return 0;
 }

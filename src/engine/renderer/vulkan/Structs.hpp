@@ -21,9 +21,9 @@ struct InstanceInfo {
 struct PhysicalDeviceInfo {
   VkPhysicalDevice device = VK_NULL_HANDLE;
   VkPhysicalDeviceProperties properties;
-  VkArray<VkExtensionProperties> extensions;
-  VkArray<VkLayerProperties> layers;
-  VkArray<VkQueueFamilyProperties> queue_family_properties;
+  vector<VkExtensionProperties> extensions;
+  vector<VkLayerProperties> layers;
+  vector<VkQueueFamilyProperties> queue_family_properties;
   VkPhysicalDeviceFeatures features;
   QueueFamilyIndices queue_family_indices;
 };
@@ -50,8 +50,8 @@ struct SwapchainInfo {
   VkExtent2D image_extent;
   VkFormat image_format;
   VkColorSpaceKHR image_color_space;
-  VkArray<VkImage> images;
-  VkArray<VkImageView> image_views;
+  vector<VkImage> images;
+  vector<VkImageView> image_views;
 };
 
 struct RenderPassInfo {
@@ -67,7 +67,7 @@ struct GraphicsPipelineInfo {
 };
 
 struct FramebufferInfo {
-  VkArray<VkFramebuffer> framebuffers;
+  vector<VkFramebuffer> framebuffers;
 };
 
 struct CommandPoolInfo {
@@ -76,19 +76,19 @@ struct CommandPoolInfo {
 };
 
 struct CommandBufferInfo {
-  VkArray<VkCommandBuffer> draw_command_buffers;
+  vector<VkCommandBuffer> draw_command_buffers;
 };
 
 struct SynchronizationInfo {
-  VkArray<VkSemaphore> image_available;
-  VkArray<VkSemaphore> render_finished;
-  VkArray<VkFence> in_flight;
-  VkArray<VkFence> images_in_flight;
+  vector<VkSemaphore> image_available;
+  vector<VkSemaphore> render_finished;
+  vector<VkFence> in_flight;
+  vector<VkFence> images_in_flight;
 };
 
 struct ViewportInfo {
-  VkArray<VkViewport> viewports;
-  VkArray<VkRect2D> scissors;
+  vector<VkViewport> viewports;
+  vector<VkRect2D> scissors;
 
   VkPipelineViewportStateCreateInfo pipline_viewport_stage_create_info;
 };
@@ -102,13 +102,13 @@ struct MultisamplingInfo {
 };
 
 struct ColorBlendInfo {
-  VkArray<VkPipelineColorBlendAttachmentState> pipeline_color_blend_attachment_states;
+  vector<VkPipelineColorBlendAttachmentState> pipeline_color_blend_attachment_states;
 
   VkPipelineColorBlendStateCreateInfo pipeline_color_blend_state_create_info;
 };
 
 struct DynamicInfo {
-  VkArray<VkDynamicState> dynamics;
+  vector<VkDynamicState> dynamics;
 
   VkPipelineDynamicStateCreateInfo pipline_dynamic_state_create_info;
 };

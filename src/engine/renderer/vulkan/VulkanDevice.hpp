@@ -117,18 +117,22 @@ int me::Vulkan::get_physical_device_infos(const array_proxy<VkPhysicalDevice> &p
     vkGetPhysicalDeviceFeatures(physical_devices[i], &physical_device_info.features);
 
     /* get physical device queue family properties */
+    uint32_t queue_family_property_count;
     vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i],
-	&physical_device_info.queue_family_properties.count, nullptr);
-    alloc.allocate_array(physical_device_info.queue_family_properties);
+	&queue_family_property_count, nullptr);
+    physical_device_info.queue_family_properties.resize(queue_family_property_count);
+
     vkGetPhysicalDeviceQueueFamilyProperties(physical_devices[i],
-	&physical_device_info.queue_family_properties.count, physical_device_info.queue_family_properties.ptr);
+	&queue_family_property_count, physical_device_info.queue_family_properties.data());
 
     /* get physical device extensions */
+    uint32_t extension_count;
     vkEnumerateDeviceExtensionProperties(physical_devices[i], nullptr,
-	&physical_device_info.extensions.count, nullptr);
-    alloc.allocate_array(physical_device_info.extensions);
+	&extension_count, nullptr);
+    physical_device_info.extensions.resize(extension_count);
+
     vkEnumerateDeviceExtensionProperties(physical_devices[i], nullptr,
-	&physical_device_info.extensions.count, physical_device_info.extensions.ptr);
+	&extension_count, physical_device_info.extensions.data());
 
     find_queue_families(physical_devices[i], surface_info.surface,
 	physical_device_info.queue_family_properties, physical_device_info.queue_family_indices);

@@ -12,10 +12,10 @@ int me::Vulkan::setup_synchronization()
 {
   logger.debug("> SETUP_SYNCHRONIZATION");
 
-  alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.image_available);
-  alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.render_finished);
-  alloc.allocate_array(MAX_FRAMES_IN_FLIGHT, synchronization_info.in_flight);
-  alloc.allocate_array(swapchain_info.images.count, synchronization_info.images_in_flight);
+  synchronization_info.image_available.resize(MAX_FRAMES_IN_FLIGHT);
+  synchronization_info.render_finished.resize(MAX_FRAMES_IN_FLIGHT);
+  synchronization_info.in_flight.resize(MAX_FRAMES_IN_FLIGHT);
+  synchronization_info.images_in_flight.resize(swapchain_info.images.size());
 
   VkSemaphoreCreateInfo semaphore_create_info = { };
   semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -27,7 +27,7 @@ int me::Vulkan::setup_synchronization()
   fence_create_info.pNext = nullptr;
   fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-  for (uint32_t i = 0; i < synchronization_info.images_in_flight.count; i++)
+  for (uint32_t i = 0; i < synchronization_info.images_in_flight.size(); i++)
     synchronization_info.images_in_flight[i] = VK_NULL_HANDLE;
 
   for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)

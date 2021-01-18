@@ -8,7 +8,7 @@
 
 namespace me {
 
-  class MemoryAlloc {
+  class MemoryAlloc : public allocator {
 
   protected:
 
@@ -24,15 +24,24 @@ namespace me {
 
     MemoryAlloc(const size_t length, void** ptr, size_t stack_position = 0);
 
-    template<typename T>
-    [[nodiscard]] T* alloc(const size_t count)
+    [[nodiscard]] void* allocate(size_t length, size_t size) override
     {
-      const size_t length = count * sizeof(T);
-      T* ptr = reinterpret_cast<T*>(stack.ptr[stack_position]);
+      length *= size;
+      void* ptr = stack.ptr[stack_position];
       printf("allocated [%lu] at %lu\n", length, stack_position);
       stack_position += length;
 
       return ptr;
+    }
+
+    [[nodiscard]] void* reallocate(void* ptr, size_t length, size_t size) override
+    {
+      throw exception("MemoryAlloc::reallocate() cannot reallocate stacked memory");
+    }
+
+    void deallocate(void* ptr) override
+    {
+      throw exception("MemoryAlloc::deallocate() cannot deallocate stacked memory");
     }
 
     void rewind(const size_t length);

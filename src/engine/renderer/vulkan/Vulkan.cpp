@@ -12,7 +12,7 @@
 #include "VulkanCallback.hpp"
 
 me::Vulkan::Vulkan(Surface* me_surface)
-  : Renderer("vulkan"), me_surface(me_surface), logger("Vulkan")
+  : Renderer("vulkan"), logger("Vulkan"), me_surface(me_surface)
 {
 }
 
@@ -22,7 +22,7 @@ int me::Vulkan::initialize(const ModuleInfo module_info)
   //logger.trace(Logger::DEBUG, true);
 #endif
 
-  alloc = MemoryAlloc(module_info.allocator.child(2048));
+  alloc = MemoryAlloc(module_info.alloc.child(2048));
 
   setup_extensions();
   setup_layers();

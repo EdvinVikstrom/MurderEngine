@@ -124,7 +124,7 @@ int me::Vulkan::map_buffer_memory(const VkDevice device,
 }
 
 bool me::Vulkan::has_extensions(const array_proxy<VkExtensionProperties> &extension_properties,
-    const vector<const char*> &required_extensions)
+    const array_proxy<const char*> &required_extensions)
 {
   for (const char* required_extension : required_extensions)
   {
@@ -145,7 +145,7 @@ bool me::Vulkan::has_extensions(const array_proxy<VkExtensionProperties> &extens
 }
 
 bool me::Vulkan::has_layers(const array_proxy<VkLayerProperties> &layer_properties,
-    const vector<const char*> &required_layers)
+    const array_proxy<const char*> &required_layers)
 {
   for (const char* required : required_layers)
   {
@@ -166,7 +166,7 @@ bool me::Vulkan::has_layers(const array_proxy<VkLayerProperties> &layer_properti
 }
 
 bool me::Vulkan::has_queue_families(const array_proxy<VkQueueFamilyProperties> &queue_family_properties,
-    const vector<VkQueueFlags> &required_queue_family_properties)
+    const array_proxy<VkQueueFlags> &required_queue_family_properties)
 {
   for (const uint32_t required : required_queue_family_properties)
   {

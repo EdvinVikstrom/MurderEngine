@@ -34,7 +34,7 @@ namespace me {
     mutable Semaphore* semaphore;
     const EngineBus* engine_bus;
     const EngineInfo* engine_info;
-    const MemoryAlloc allocator;
+    const MemoryAlloc alloc;
   };
 
 

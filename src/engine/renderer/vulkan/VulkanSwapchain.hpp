@@ -70,12 +70,13 @@ int me::Vulkan::setup_swapchain()
     throw exception("failed to create swapchain [%s]", vk_utils_result_string(result));
 
   /* get swapchain images */
-  result = vkGetSwapchainImagesKHR(logical_device_info.device, swapchain_info.swapchain, &swapchain_info.images.count, nullptr);
+  uint32_t image_count;
+  result = vkGetSwapchainImagesKHR(logical_device_info.device, swapchain_info.swapchain, &image_count, nullptr);
   if (result != VK_SUCCESS)
     throw exception("failed to get swapchain images count [%s]", vk_utils_result_string(result));
 
-  alloc.allocate_array(swapchain_info.images);
-  result = vkGetSwapchainImagesKHR(logical_device_info.device, swapchain_info.swapchain, &swapchain_info.images.count, swapchain_info.images.ptr);
+  swapchain_info.images.resize(image_count);
+  result = vkGetSwapchainImagesKHR(logical_device_info.device, swapchain_info.swapchain, &image_count, swapchain_info.images.data());
   if (result != VK_SUCCESS)
     throw exception("failed to get swapchain images [%s]", vk_utils_result_string(result));
  return 0;
@@ -85,9 +86,9 @@ int me::Vulkan::setup_framebuffers()
 {
   logger.debug("> SETUP_FRAMEBUFFERS");
 
-  alloc.allocate_array(swapchain_info.image_views.count, framebuffer_info.framebuffers);
+  framebuffer_info.framebuffers.resize(swapchain_info.image_views.size());
 
-  for (uint32_t i = 0; i < swapchain_info.image_views.count; i++)
+  for (uint32_t i = 0; i < swapchain_info.image_views.size(); i++)
   {
     uint32_t attachment_count = 1;
     VkImageView attachments[attachment_count];
@@ -159,7 +160,7 @@ int me::Vulkan::cleanup_swapchain()
 
 int me::Vulkan::cleanup_framebuffers()
 {
-  for (uint32_t i = 0; i < framebuffer_info.framebuffers.count; i++)
+  for (uint32_t i = 0; i < framebuffer_info.framebuffers.size(); i++)
     vkDestroyFramebuffer(logical_device_info.device, framebuffer_info.framebuffers[i], nullptr);
   return 0;
 }

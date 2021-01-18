@@ -6,8 +6,9 @@ int me::Vulkan::setup_image_views()
 {
   logger.debug("> SETUP_IMAGE_VIEWS");
 
-  alloc.allocate_array(swapchain_info.images.count, swapchain_info.image_views);
-  for (uint32_t i = 0; i < swapchain_info.image_views.count; i++)
+  swapchain_info.image_views.resize(swapchain_info.images.size());
+
+  for (uint32_t i = 0; i < swapchain_info.image_views.size(); i++)
   {
     VkImageViewCreateInfo image_view_create_info = { };
     image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -249,7 +250,7 @@ int me::Vulkan::create_shader_module(const Shader* shader)
 /* <--- CLEANUP ---> */
 int me::Vulkan::cleanup_image_views()
 {
-  for (uint32_t i = 0; i < swapchain_info.image_views.count; i++)
+  for (uint32_t i = 0; i < swapchain_info.image_views.size(); i++)
     vkDestroyImageView(logical_device_info.device, swapchain_info.image_views[i], nullptr);
   return 0;
 }
@@ -282,13 +283,13 @@ int me::Vulkan::cleanup_graphics_pipeline()
 /* <--- SETUP ---> */
 int me::Vulkan::setup_viewports()
 {
-  alloc.allocate_array(1, viewport_info.viewports);
+  viewport_info.viewports.resize(1);
   viewport_info.viewports[0] = {
       .x = 0.0F, .y = 0.0F,
       .width = (float) swapchain_info.image_extent.width, .height = (float) swapchain_info.image_extent.height,
       .minDepth = 0.0F, .maxDepth = 1.0F};
 
-  alloc.allocate_array(1, viewport_info.scissors);
+  viewport_info.scissors.resize(1);
   viewport_info.scissors[0] = {
       .offset = {0, 0},
       .extent = swapchain_info.image_extent};
@@ -296,10 +297,10 @@ int me::Vulkan::setup_viewports()
   viewport_info.pipline_viewport_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   viewport_info.pipline_viewport_stage_create_info.pNext = nullptr;
   viewport_info.pipline_viewport_stage_create_info.flags = 0;
-  viewport_info.pipline_viewport_stage_create_info.viewportCount = viewport_info.viewports.count;
-  viewport_info.pipline_viewport_stage_create_info.pViewports = viewport_info.viewports.ptr;
-  viewport_info.pipline_viewport_stage_create_info.scissorCount = viewport_info.scissors.count;
-  viewport_info.pipline_viewport_stage_create_info.pScissors = viewport_info.scissors.ptr;
+  viewport_info.pipline_viewport_stage_create_info.viewportCount = viewport_info.viewports.size();
+  viewport_info.pipline_viewport_stage_create_info.pViewports = viewport_info.viewports.data();
+  viewport_info.pipline_viewport_stage_create_info.scissorCount = viewport_info.scissors.size();
+  viewport_info.pipline_viewport_stage_create_info.pScissors = viewport_info.scissors.data();
   return 0;
 }
 
@@ -337,7 +338,7 @@ int me::Vulkan::setup_multisampling()
 
 int me::Vulkan::setup_color_blend()
 {
-  alloc.allocate_array(1, color_blend_info.pipeline_color_blend_attachment_states);
+  color_blend_info.pipeline_color_blend_attachment_states.resize(1);
   color_blend_info.pipeline_color_blend_attachment_states[0] = {
       VK_FALSE,
       VK_BLEND_FACTOR_ONE,
@@ -353,8 +354,8 @@ int me::Vulkan::setup_color_blend()
   color_blend_info.pipeline_color_blend_state_create_info.flags = 0;
   color_blend_info.pipeline_color_blend_state_create_info.logicOpEnable = VK_FALSE;
   color_blend_info.pipeline_color_blend_state_create_info.logicOp = VK_LOGIC_OP_COPY;
-  color_blend_info.pipeline_color_blend_state_create_info.attachmentCount = color_blend_info.pipeline_color_blend_attachment_states.count;
-  color_blend_info.pipeline_color_blend_state_create_info.pAttachments = color_blend_info.pipeline_color_blend_attachment_states.ptr;
+  color_blend_info.pipeline_color_blend_state_create_info.attachmentCount = color_blend_info.pipeline_color_blend_attachment_states.size();
+  color_blend_info.pipeline_color_blend_state_create_info.pAttachments = color_blend_info.pipeline_color_blend_attachment_states.data();
   color_blend_info.pipeline_color_blend_state_create_info.blendConstants[0] = 0.0F;
   color_blend_info.pipeline_color_blend_state_create_info.blendConstants[1] = 0.0F;
   color_blend_info.pipeline_color_blend_state_create_info.blendConstants[2] = 0.0F;
@@ -364,14 +365,14 @@ int me::Vulkan::setup_color_blend()
 
 int me::Vulkan::setup_dynamic()
 {
-  alloc.allocate_array(2, dynamic_info.dynamics);
+  dynamic_info.dynamics.resize(2);
   dynamic_info.dynamics[0] = VK_DYNAMIC_STATE_VIEWPORT;
   dynamic_info.dynamics[1] = VK_DYNAMIC_STATE_LINE_WIDTH;
 
   dynamic_info.pipline_dynamic_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
   dynamic_info.pipline_dynamic_state_create_info.pNext = nullptr;
   dynamic_info.pipline_dynamic_state_create_info.flags = 0;
-  dynamic_info.pipline_dynamic_state_create_info.dynamicStateCount = dynamic_info.dynamics.count;
-  dynamic_info.pipline_dynamic_state_create_info.pDynamicStates = dynamic_info.dynamics.ptr;
+  dynamic_info.pipline_dynamic_state_create_info.dynamicStateCount = dynamic_info.dynamics.size();
+  dynamic_info.pipline_dynamic_state_create_info.pDynamicStates = dynamic_info.dynamics.data();
   return 0;
 }

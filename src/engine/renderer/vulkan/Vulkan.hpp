@@ -12,7 +12,11 @@
 #include <vulkan/vulkan_core.h>
 
 #include <lme/optional.hpp>
+#define ME_VECTOR_UINT32_TYPE
+  #include <lme/vector.hpp>
+#undef ME_VECTOR_UINT32_TYPE
 #include <lme/array.hpp>
+#include <lme/array_proxy.hpp>
 
 namespace me {
 
@@ -60,7 +64,7 @@ namespace me {
 
     Logger logger;
 
-    VulkanAlloc alloc;
+    allocator alloc;
 
     Surface* me_surface;
     vector<const char*> required_extensions;
@@ -181,9 +185,9 @@ namespace me {
 	const VkDeviceSize buffer_size, const VkBuffer source_buffer, const VkBuffer destination_buffer);
     static int map_buffer_memory(const VkDevice, const VkDeviceSize buffer_size, const void* buffer_data, const VkDeviceMemory);
 
-    static bool has_extensions(const array_proxy<VkExtensionProperties>&, const vector<const char*> &required_extensions);
-    static bool has_layers(const array_proxy<VkLayerProperties>&, const vector<const char*> &required_layers);
-    static bool has_queue_families(const array_proxy<VkQueueFamilyProperties>&, const vector<VkQueueFlags> &required_queue_family_properties);
+    static bool has_extensions(const array_proxy<VkExtensionProperties>&, const array_proxy<const char*> &required_extensions);
+    static bool has_layers(const array_proxy<VkLayerProperties>&, const array_proxy<const char*> &required_layers);
+    static bool has_queue_families(const array_proxy<VkQueueFamilyProperties>&, const array_proxy<VkQueueFlags> &required_queue_family_properties);
     static bool has_present_mode(const array_proxy<VkPresentModeKHR>&, const VkPresentModeKHR required_present_mode);
 
     static int find_surface_format(const VkFormat, const VkColorSpaceKHR, const array_proxy<VkSurfaceFormatKHR>&, VkSurfaceFormatKHR&);

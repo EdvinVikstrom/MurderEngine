@@ -26,7 +26,7 @@ namespace me {
     const EngineInfo engine_info;
     const EngineBus engine_bus;
 
-    MemoryAlloc allocator;
+    MemoryAlloc alloc;
 
   public:
 

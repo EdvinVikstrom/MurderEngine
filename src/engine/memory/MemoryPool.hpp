@@ -25,7 +25,7 @@ namespace me {
   
     T* allocate()
     {
-      return allocator.alloc<T>(1);
+      return allocator.allocate(1, sizeof(T));
     }
 
     void rewind(size_t length)
