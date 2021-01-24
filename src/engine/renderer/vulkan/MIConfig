@@ -1,0 +1,15 @@
+sources += [
+  "$(DIR)/Vulkan.cpp"
+  "$(DIR)/Command.cpp"
+  "$(DIR)/Debug.cpp"
+  "$(DIR)/Device.cpp"
+  "$(DIR)/Framebuffer.cpp"
+  "$(DIR)/Instance.cpp"
+  "$(DIR)/Memory.cpp"
+  "$(DIR)/Mesh.cpp"
+  "$(DIR)/Pipeline.cpp"
+  "$(DIR)/RenderPass.cpp"
+  "$(DIR)/Surface.cpp"
+  "$(DIR)/Swapchain.cpp"
+  "$(DIR)/Util.cpp"
+]

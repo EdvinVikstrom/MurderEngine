@@ -6,7 +6,7 @@ namespace me {
   struct MappedMemory {
 
     size_t size;
-    void** ptr;
+    char* ptr;
 
   };
 

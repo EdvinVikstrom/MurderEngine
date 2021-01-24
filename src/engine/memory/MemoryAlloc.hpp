@@ -22,27 +22,14 @@ namespace me {
 
     MemoryAlloc(const size_t stack_length, size_t stack_position = 0);
 
-    MemoryAlloc(const size_t length, void** ptr, size_t stack_position = 0);
+    MemoryAlloc(const size_t length, char* ptr, size_t stack_position = 0);
 
-    [[nodiscard]] void* allocate(size_t length, size_t size) override
-    {
-      length *= size;
-      void* ptr = stack.ptr[stack_position];
-      printf("allocated [%lu] at %lu\n", length, stack_position);
-      stack_position += length;
+    [[nodiscard]] void* begin() const;
+    [[nodiscard]] void* end() const;
 
-      return ptr;
-    }
-
-    [[nodiscard]] void* reallocate(void* ptr, size_t length, size_t size) override
-    {
-      throw exception("MemoryAlloc::reallocate() cannot reallocate stacked memory");
-    }
-
-    void deallocate(void* ptr) override
-    {
-      throw exception("MemoryAlloc::deallocate() cannot deallocate stacked memory");
-    }
+    [[nodiscard]] void* allocate(size_t length, size_t size) override;
+    [[nodiscard]] void* reallocate(void* ptr, size_t length, size_t size) override;
+    void deallocate(void* ptr) override;
 
     void rewind(const size_t length);
 

@@ -2,6 +2,7 @@
   #define ME_SURFACE_HPP
 
 #include "../Module.hpp"
+#include "../event/InputEvent.hpp"
 
 #include <lme/vector.hpp>
 #include <lme/string.hpp>
@@ -50,14 +51,15 @@ namespace me {
     UserCallbacks user_callbacks;
     Callbacks callbacks;
     Config config;
+    
+    vector<pair<InputEventCallback*, void*>> input_event_callbacks;
 
   public:
 
-    explicit Surface(const string &name, UserCallbacks &user_callbacks, Callbacks &callbacks)
+    explicit Surface(const string &name, UserCallbacks &user_callbacks)
       : Module(MODULE_SURFACE_TYPE, name)
     {
       this->user_callbacks = user_callbacks;
-      this->callbacks = callbacks;
     }
 
     virtual int get_properties(const SurfaceProperty property, uint32_t &count, void* data) const = 0;
@@ -72,7 +74,13 @@ namespace me {
 
     int register_resize_surface_callback(Callbacks::resize_surface_fn* resize_surface, void* ptr)
     {
-      callbacks.resize_surface.push_back(pair(resize_surface, ptr));
+      callbacks.resize_surface.emplace_back(resize_surface, ptr);
+      return 0;
+    }
+
+    int register_input_event_callback(InputEventCallback* input_event_callback, void* ptr)
+    {
+      input_event_callbacks.emplace_back(input_event_callback, ptr);
       return 0;
     }
 

@@ -1,11 +1,13 @@
 #include "WindowSurface.hpp"
 
-#include "../../util/vk_utils.hpp"
+#include "../../renderer/vulkan/Util.hpp"
+
+#include "GLFW/glfw3.h"
 
 #include <lme/time.hpp>
 
-me::WindowSurface::WindowSurface(UserCallbacks &user_callbacks, Callbacks &callbacks)
-  : Surface("glfw", user_callbacks, callbacks), logger("Window")
+me::WindowSurface::WindowSurface(UserCallbacks &user_callbacks)
+  : Surface("glfw", user_callbacks), logger("Window")
 {
 }
 
@@ -22,6 +24,7 @@ int me::WindowSurface::initialize(const ModuleInfo module_info)
   user_callbacks.init_surface(Surface::config);
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   glfw_window = glfwCreateWindow(config.width, config.height, config.title, nullptr, nullptr);
   glfwSetWindowUserPointer(glfw_window, this);
   glfwSetFramebufferSizeCallback(glfw_window, glfw_framebuffer_size_callback);
@@ -76,7 +79,7 @@ int me::WindowSurface::vk_create_surface(VkInstance instance, const VkAllocation
 {
   VkResult result = glfwCreateWindowSurface(instance, glfw_window, allocator, surface);
   if (result != VK_SUCCESS)
-    throw exception("failed to create vulkan surface [%s]", vk_utils_result_string(result));
+    throw exception("failed to create vulkan surface [%s]", vulkan::util::get_result_string(result));
   return 0;
 }
 
@@ -115,4 +118,40 @@ void me::WindowSurface::glfw_framebuffer_size_callback(GLFWwindow* glfw_window, 
 void me::WindowSurface::glfw_window_refresh_callback(GLFWwindow* glfw_window)
 {
   WindowSurface* instance = reinterpret_cast<WindowSurface*>(glfwGetWindowUserPointer(glfw_window));
+}
+
+
+void me::WindowSurface::glfw_key_callback(GLFWwindow* glfw_window, int key, int scancode, int action, int mods)
+{
+  WindowSurface* instance = reinterpret_cast<WindowSurface*>(glfwGetWindowUserPointer(glfw_window));
+
+  InputEventAction me_action = glfw_translate_action(action);
+  InputEventKey me_key = glfw_translate_key(key);
+
+  for (auto callback : instance->input_event_callbacks)
+    callback.first->input_event_key(me_action, me_key, callback.second);
+}
+
+void me::WindowSurface::glfw_cursor_position_callback(GLFWwindow* glfw_window, double x_pos, double y_pos)
+{
+  WindowSurface* instance = reinterpret_cast<WindowSurface*>(glfwGetWindowUserPointer(glfw_window));
+
+  for (auto callback : instance->input_event_callbacks)
+    callback.first->input_event_cursor_position(x_pos, y_pos, callback.second);
+}
+
+me::InputEventKey me::WindowSurface::glfw_translate_key(int key)
+{
+  if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z)
+    return (InputEventKey) key;
+  return INPUT_EVENT_UNKNOWN_KEY;
+}
+
+me::InputEventAction me::WindowSurface::glfw_translate_action(int action)
+{
+  if (action == GLFW_PRESS)
+    return INPUT_EVENT_PRESS_ACTION;
+  else if (action == GLFW_RELEASE)
+    return INPUT_EVENT_RELEASE_ACTION;
+  return INPUT_EVENT_UNKNOWN_ACTION;
 }

@@ -31,6 +31,18 @@ SOURCES = ./src/Main.cpp \
 	./src/engine/MurderEngine.cpp \
 	./src/engine/Logger.cpp \
 	./src/engine/renderer/vulkan/Vulkan.cpp \
+	./src/engine/renderer/vulkan/Command.cpp \
+	./src/engine/renderer/vulkan/Debug.cpp \
+	./src/engine/renderer/vulkan/Device.cpp \
+	./src/engine/renderer/vulkan/Framebuffer.cpp \
+	./src/engine/renderer/vulkan/Instance.cpp \
+	./src/engine/renderer/vulkan/Memory.cpp \
+	./src/engine/renderer/vulkan/Mesh.cpp \
+	./src/engine/renderer/vulkan/Pipeline.cpp \
+	./src/engine/renderer/vulkan/RenderPass.cpp \
+	./src/engine/renderer/vulkan/Surface.cpp \
+	./src/engine/renderer/vulkan/Swapchain.cpp \
+	./src/engine/renderer/vulkan/Util.cpp \
 	./src/engine/surface/window/WindowSurface.cpp \
 	./src/engine/memory/MemoryAlloc.cpp \
 	./src/engine/scene/Scene.cpp \

@@ -14,9 +14,11 @@ me::MurderEngine::MurderEngine(const EngineInfo &engine_info, const EngineBus &e
 
 int me::MurderEngine::initialize(int argc, char** argv)
 {
+  Logger::init(fopen("/tmp/murder_engine.log", "wb"));
+
   running = true;
 #ifndef NDEBUG
-  logger.trace(Logger::DEBUG, true);
+  logger.set_option(LOG_DEBUG_FLAG, true);
 #endif
 
   logger.info("running %s engine version [%u.%u.%u]", ME_ENGINE_NAME,

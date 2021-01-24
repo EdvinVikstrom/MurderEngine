@@ -22,10 +22,21 @@ namespace me {
       : allocator(allocator)
     {
     }
-  
-    T* allocate()
+
+    [[nodiscard]] T* begin() const
     {
-      return allocator.allocate(1, sizeof(T));
+      return (T*) allocator.begin();
+    }
+
+    [[nodiscard]] T* end() const
+    {
+      return (T*) allocator.end();
+    }
+  
+    template<typename... A>
+    [[nodiscard]] T* allocate(A&&... args)
+    {
+      return new T(static_cast<A&&>(args)...);
     }
 
     void rewind(size_t length)

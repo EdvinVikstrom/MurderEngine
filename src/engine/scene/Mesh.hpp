@@ -11,6 +11,11 @@
 
 namespace me {
 
+  enum MeshFlag {
+    MESH_VISIBLE_FLAG = 1
+  };
+
+
   struct Vertex {
     math::vec3f position;
     math::vec3f normal;
@@ -19,30 +24,8 @@ namespace me {
   };
   typedef uint32_t Index;
 
-  class MeshReference {
-    
-  protected:
-
-    const string source;
-    bool complete;
-
-  public:
-
-    explicit MeshReference(const string &source, bool complete = false)
-      : source(source)
-    {
-      this->complete = complete;
-    }
-
-    const string& get_source() const
-    { return source; }
-
-    const bool is_complete() const
-    { return complete; }
-
-  };
-
-  class Mesh : public MeshReference {
+  /* mesh class for storing vertices, indices and materials */
+  class Mesh {
 
   protected:
 
@@ -59,9 +42,25 @@ namespace me {
     VertexBuffer vertex_buffer;
     IndexBuffer index_buffer;
     
-    Mesh(const string &source, const vector<Vertex> &vertices, const vector<Index> &indices)
-      : MeshReference(source, true), vertices(vertices), indices(indices)
+    Mesh(const vector<Vertex> &vertices, const vector<Index> &indices)
+      : vertices(vertices), indices(indices)
     {
+    }
+
+  };
+
+  /* mesh reference class for storing a pointer to a mesh and flags */
+  class MeshRef {
+
+  public:
+
+    Mesh* mesh;
+    uint16_t flags;
+
+    MeshRef(Mesh* mesh, uint16_t flags)
+    {
+      this->mesh = mesh;
+      this->flags = flags;
     }
 
   };
