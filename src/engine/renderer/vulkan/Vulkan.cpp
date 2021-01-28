@@ -1,86 +1,84 @@
 #include "Vulkan.hpp"
 #include "Util.hpp"
 
-me::vulkan::Vulkan::Vulkan()
-  : Renderer("vulkan"), logger("Vulkan")
+me::Vulkan::Vulkan()
+  : RendererModule("vulkan"), logger("Vulkan")
 {
 }
 
-int me::vulkan::Vulkan::init_engine(const EngineInfo &engine_info, Surface* surface)
+int me::Vulkan::init_engine(const EngineInitInfo &engine_init_info)
 {
-  setup_instance(engine_info, surface);
+  setup_instance(engine_init_info);
   setup_debug();
-
-  render_info.state = RenderInfo::ACTIVE_STATE;
   return 0;
 }
 
-int me::vulkan::Vulkan::initialize(const ModuleInfo module_info)
+int me::Vulkan::initialize(const ModuleInfo module_info)
 {
 #ifndef NDEBUG
   //logger.trace(Logger::DEBUG, true);
 #endif
 
-  alloc = MemoryAlloc(module_info.alloc.child(2048));
+  alloc = MemoryAlloc(module_info.alloc.child(4096));
   return 0;
 }
 
-int me::vulkan::Vulkan::terminate(const ModuleInfo module_info)
+int me::Vulkan::terminate(const ModuleInfo module_info)
 {
-  vkDeviceWaitIdle(vk_device);
-
-#ifndef NDEBUG
-  cleanup_debug();
-#endif
-
-  cleanup_memory();
-  cleanup_command_pool();
-  cleanup_render_pass();
-  cleanup_swapchain();
-  cleanup_surface();
-  cleanup_memory();
-  cleanup_device();
   cleanup_instance();
   return 0;
 }
 
-int me::vulkan::Vulkan::tick(const ModuleInfo module_info)
+int me::Vulkan::tick(const ModuleInfo module_info)
 {
-  if (render_info.state == RenderInfo::ACTIVE_STATE)
-    render(render_info);
-  else if (render_info.state == RenderInfo::NO_SWAPCHAIN_STATE)
-    refresh_swapchain();
   return 0;
 }
 
 
-int me::vulkan::Vulkan::render(RenderInfo &render_info)
+//render_info.frame_index++;
+//if (render_info.frame_index == RenderInfo::MAX_FRAMES_IN_FLIGHT)
+//  render_info.frame_index = 0;
+
+int me::Vulkan::frame_prepare(const FramePrepareInfo &frame_prepare_info, FramePrepared &frame_prepared)
 {
-  vkWaitForFences(vk_device, 1, &vk_in_flight_fences[render_info.frame_index], VK_TRUE, UINT64_MAX);
+  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(frame_prepare_info.device)->vk_device;
+  VkSwapchainKHR vk_swapchain = reinterpret_cast<VulkanSwapchain*>(frame_prepare_info.swapchain)->vk_swapchain;
+  VulkanFrame* frame = reinterpret_cast<VulkanFrame*>(frame_prepare_info.frame);
 
+  vkWaitForFences(vk_device, 1, &frame->vk_in_flight_fence, VK_TRUE, UINT64_MAX);
+
+  uint32_t image_index;
   VkResult result = vkAcquireNextImageKHR(vk_device, vk_swapchain, UINT64_MAX,
-      vk_image_available_semaphores[render_info.frame_index], VK_NULL_HANDLE, &render_info.image_index);
+      frame->vk_image_available_semaphore, VK_NULL_HANDLE, &image_index);
 
-  SwapchainImage &swapchain_image = swapchain_images[render_info.image_index];
-
+  uint8_t flags = 0;
   if (result == VK_ERROR_OUT_OF_DATE_KHR)
   {
-    refresh_swapchain();
-    return 0;
+    flags |= FRAME_SWAPCHAIN_REFRESH_FLAG;
   }else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
     throw exception("failed to acquire next image [%s]", util::get_result_string(result));
 
+  frame_prepared = alloc_render_temp.allocate<VulkanFramePrepared>(image_index, flags);
+  return 0;
+}
 
-  if (vk_images_in_flight_fences[render_info.image_index] != VK_NULL_HANDLE)
-    vkWaitForFences(vk_device, 1, &vk_images_in_flight_fences[render_info.image_index], VK_TRUE, UINT64_MAX);
-  vk_images_in_flight_fences[render_info.image_index] = vk_in_flight_fences[render_info.frame_index];
+int me::Vulkan::frame_render(const FrameRenderInfo &frame_render_info, FrameRendered &frame_rendered)
+{
+  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(frame_render_info.device)->vk_device;
+  VkQueue vk_queue = reinterpret_cast<VulkanQueue*>(frame_render_info.queue)->vk_queue;
+  VulkanSwapchainImage* image = reinterpret_cast<VulkanSwapchainImage*>(frame_render_info.image);
+  VulkanFrame* frame = reinterpret_cast<VulkanFrame*>(frame_render_info.frame);
 
-  refresh_uniform_buffers(render_info);
+  if (image->vk_in_flight_fence != VK_NULL_HANDLE)
+    vkWaitForFences(vk_device, 1, &image->vk_in_flight_fence, VK_TRUE, UINT64_MAX);
+  image->vk_in_flight_fence = frame->vk_in_flight_fence;
+
+  // refresh_uniform_buffers(render_info);
 
   /* create wait semaphores */
   static uint32_t wait_semaphore_count = 1;
   VkSemaphore wait_semaphores[wait_semaphore_count];
-  wait_semaphores[0] = vk_image_available_semaphores[render_info.frame_index];
+  wait_semaphores[0] = frame->vk_image_available_semaphore;
 
   /* create wait stages */
   static uint32_t wait_stage_count = 1;
@@ -88,15 +86,14 @@ int me::vulkan::Vulkan::render(RenderInfo &render_info)
   wait_stages[0] = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
   /* get command buffers */
-  static uint32_t command_buffer_count = swapchain_image.vk_command_buffers.size();
-  VkCommandBuffer command_buffers[command_buffer_count];
-  for (uint32_t i = 0; i < swapchain_image.vk_command_buffers.size(); i++)
-    command_buffers[i] = swapchain_image.vk_command_buffers[i];
+  VkCommandBuffer command_buffers[frame_render_info.command_buffer_count];
+  for (uint32_t i = 0; i < frame_render_info.command_buffer_count; i++)
+    command_buffers[i] = reinterpret_cast<VulkanCommandBuffer*>(frame_render_info.command_buffers[i])->vk_command_buffer;
 
   /* create signal semaphores */
-  static uint32_t signal_semaphore_count = 1;
+  static constexpr uint32_t signal_semaphore_count = 1;
   VkSemaphore signal_semaphores[signal_semaphore_count];
-  signal_semaphores[0] = vk_render_finished_semaphores[render_info.frame_index];
+  signal_semaphores[0] = frame->vk_render_finished_semaphore;
 
   /* create submit infos */
   static uint32_t submit_info_count = 1;
@@ -106,53 +103,50 @@ int me::vulkan::Vulkan::render(RenderInfo &render_info)
   submit_infos[0].waitSemaphoreCount = wait_semaphore_count;
   submit_infos[0].pWaitSemaphores = wait_semaphores;
   submit_infos[0].pWaitDstStageMask = wait_stages;
-  submit_infos[0].commandBufferCount = command_buffer_count;
+  submit_infos[0].commandBufferCount = frame_render_info.command_buffer_count;
   submit_infos[0].pCommandBuffers = command_buffers;
   submit_infos[0].signalSemaphoreCount = signal_semaphore_count;
   submit_infos[0].pSignalSemaphores = signal_semaphores;
 
-  vkResetFences(vk_device, 1, &vk_in_flight_fences[render_info.frame_index]);
+  vkResetFences(vk_device, 1, &image->vk_in_flight_fence);
 
-  result = vkQueueSubmit(queue_families.graphics_queue, submit_info_count, submit_infos, vk_in_flight_fences[render_info.frame_index]);
+  VkResult result = vkQueueSubmit(vk_queue, submit_info_count, submit_infos, image->vk_in_flight_fence);
   if (result != VK_SUCCESS)
     throw exception("failed to queue submit [%s]", util::get_result_string(result));
 
+  uint8_t flags = 0;
+  frame_rendered = alloc_render_temp.allocate<VulkanFrameRendered>(signal_semaphores[0], flags);
+  return 0;
+}
 
-  /* get swapchains */
-  static uint32_t swapchain_count = 1;
-  VkSwapchainKHR swapchains[swapchain_count];
-  swapchains[0] = vk_swapchain;
+int me::Vulkan::frame_present(const FramePresentInfo &frame_present_info, FramePresented &frame_presented)
+{
+  VkQueue vk_queue = reinterpret_cast<VulkanQueue*>(frame_present_info.queue)->vk_queue;
+  VulkanFrameRendered* frame_rendered = reinterpret_cast<VulkanFrameRendered*>(frame_present_info.rendered);
+
+  VkSwapchainKHR swapchains[frame_present_info.swapchain_count];
+  for (uint32_t i = 0; i < frame_present_info.swapchain_count; i++)
+    swapchains[i] = reinterpret_cast<VulkanSwapchain*>(frame_present_info.swapchains[i])->vk_swapchain;
 
   /* create present info */
   VkPresentInfoKHR present_info = { };
   present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   present_info.pNext = nullptr;
-  present_info.waitSemaphoreCount = signal_semaphore_count;
-  present_info.pWaitSemaphores = signal_semaphores;
-  present_info.swapchainCount = swapchain_count;
+  present_info.waitSemaphoreCount = 1;
+  present_info.pWaitSemaphores = &frame_rendered->signal_semaphore;
+  present_info.swapchainCount = frame_present_info.swapchain_count;
   present_info.pSwapchains = swapchains;
-  present_info.pImageIndices = &render_info.image_index;
+  present_info.pImageIndices = &frame_present_info.image_index;
   present_info.pResults = nullptr;
 
-  result = vkQueuePresentKHR(queue_families.present_queue, &present_info);
-  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-      render_info.flags & RenderInfo::FRAMEBUFFER_RESIZED_FLAG_BIT)
+  uint8_t flags = 0;
+  VkResult result = vkQueuePresentKHR(vk_queue, &present_info);
+  if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || flags & FRAME_SWAPCHAIN_REFRESH_FLAG)
   {
-    render_info.flags &= ~RenderInfo::FRAMEBUFFER_RESIZED_FLAG_BIT;
-    refresh_swapchain();
+    flags &= ~FRAME_SWAPCHAIN_REFRESH_FLAG;
   }else if (result != VK_SUCCESS)
     throw exception("failed to queue present [%s]", util::get_result_string(result));
 
-
-  /* increment the frame index and reset to 0 if equals MAX_FRAMES_IN_FLIGHT */
-  render_info.frame_index++;
-  if (render_info.frame_index == RenderInfo::MAX_FRAMES_IN_FLIGHT)
-    render_info.frame_index = 0;
-  return 0;
-}
-
-int me::vulkan::Vulkan::register_mesh(MeshRef* mesh)
-{
-  data_storage.meshes.push_back(mesh);
+  frame_presented = alloc_render_temp.allocate<VulkanFramePresented>(flags);
   return 0;
 }

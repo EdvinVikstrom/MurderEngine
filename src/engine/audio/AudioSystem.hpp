@@ -34,13 +34,13 @@ namespace me {
 
   };
 
-  class AudioSystem : public Module {
+  class AudioSystemModule : public Module {
 
   protected:
 
   public:
 
-    explicit AudioSystem(const string &name)
+    explicit AudioSystemModule(const string &name)
       : Module(MODULE_AUDIO_TYPE, name)
     {
     }

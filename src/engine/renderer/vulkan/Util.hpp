@@ -7,7 +7,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace me::vulkan::util {
+namespace me::util {
 
   bool has_required_extensions(
       const array_proxy<VkExtensionProperties> 		&extensions,

@@ -17,10 +17,16 @@ static int get_extent(
     );
 
 
-int me::vulkan::Vulkan::setup_surface(const SurfaceInfo &surface_info)
+int me::Vulkan::create_surface(const SurfaceCreateInfo &surface_create_info, Surface &surface)
 {
-  surface_info.surface->register_resize_surface_callback(surface_resize_callback, this);
+  VERIFY_CREATE_INFO(surface_create_info, STRUCTURE_TYPE_SURFACE_CREATE_INFO);
 
+  VkPhysicalDevice vk_physical_device = reinterpret_cast<VulkanPhysicalDevice*>(surface_create_info.physical_device)->vk_physical_device;
+
+  VkSurfaceKHR vk_surface;
+  surface_create_info.surface_module->vk_create_surface(vk_instance, vk_allocation, &vk_surface);
+
+  VkSurfaceCapabilitiesKHR vk_surface_capabilities;
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physical_device, vk_surface, &vk_surface_capabilities);
 
   /* getting surface formats */
@@ -36,31 +42,28 @@ int me::vulkan::Vulkan::setup_surface(const SurfaceInfo &surface_info)
   vkGetPhysicalDeviceSurfacePresentModesKHR(vk_physical_device, vk_surface, &present_mode_count, present_modes);
 
   /* checking if VK_PRESENT_MODE_MAILBOX_KHR is supported */
+  VkPresentModeKHR vk_present_mode;
   if (algorithm::array_find({present_mode_count, present_modes}, VK_PRESENT_MODE_MAILBOX_KHR) != SIZE_MAX)
-    vk_surface_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
+    vk_present_mode = VK_PRESENT_MODE_MAILBOX_KHR;
   else
-    vk_surface_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+    vk_present_mode = VK_PRESENT_MODE_FIFO_KHR;
 
-  surface_info.surface->get_framebuffer_size(vk_surface_extent.width, vk_surface_extent.height);
+  VkExtent2D vk_extent;
+  surface_create_info.surface_module->get_framebuffer_size(vk_extent.width, vk_extent.height);
+  get_extent(vk_surface_capabilities, vk_extent);
+
+  VkSurfaceFormatKHR vk_surface_format;
   get_format(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, {surface_format_count, surface_formats}, vk_surface_format);
-  get_extent(vk_surface_capabilities, vk_surface_extent);
+
+  surface = alloc.allocate<VulkanSurface>(vk_surface, vk_surface_capabilities, vk_surface_format, vk_present_mode, vk_extent);
   return 0;
 }
 
-int me::vulkan::Vulkan::surface_resize_callback(
-    uint32_t 							width,
-    uint32_t 							height,
-    void* 							ptr
-    )
+int me::Vulkan::cleanup_surface(const SurfaceCleanupInfo &surface_cleanup_info, Surface surface)
 {
-  Vulkan* instance = reinterpret_cast<Vulkan*>(ptr);
-  instance->render_info.flags |= RenderInfo::FRAMEBUFFER_RESIZED_FLAG_BIT;
-  return 0;
-}
+  VulkanSurface* vulkan_surface = reinterpret_cast<VulkanSurface*>(surface);
 
-int me::vulkan::Vulkan::cleanup_surface()
-{
-  vkDestroySurfaceKHR(vk_instance, vk_surface, vk_allocation);
+  vkDestroySurfaceKHR(vk_instance, vulkan_surface->vk_surface, vk_allocation);
   return 0;
 }
 

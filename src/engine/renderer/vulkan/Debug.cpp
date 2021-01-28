@@ -20,14 +20,14 @@ static int create_debug_report(
     );
 
 
-int me::vulkan::Vulkan::setup_debug()
+int me::Vulkan::setup_debug()
 {
   create_debug_messenger(vk_instance, vk_allocation, &logger, debug_callback, vk_debug_utils_messenger);
   create_debug_report(vk_instance, vk_allocation, &logger, debug_callback, vk_debug_report_callback);
   return 0;
 }
 
-VkBool32 me::vulkan::Vulkan::debug_callback(
+VkBool32 me::Vulkan::debug_callback(
     VkDebugReportFlagsEXT 				debug_report_flags,
     VkDebugReportObjectTypeEXT 				debug_report_object_type,
     uint64_t 						object,
@@ -52,7 +52,7 @@ VkBool32 me::vulkan::Vulkan::debug_callback(
   return VK_FALSE;
 }
 
-VkBool32 me::vulkan::Vulkan::debug_callback(
+VkBool32 me::Vulkan::debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT 		message_severity,
     VkDebugUtilsMessageTypeFlagsEXT 			message_type,
     const VkDebugUtilsMessengerCallbackDataEXT* 	callback_data, 
@@ -71,7 +71,7 @@ VkBool32 me::vulkan::Vulkan::debug_callback(
   return VK_FALSE;
 }
 
-int me::vulkan::Vulkan::cleanup_debug()
+int me::Vulkan::cleanup_debug()
 {
   PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = (PFN_vkDestroyDebugUtilsMessengerEXT)
     vkGetInstanceProcAddr(vk_instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -112,7 +112,7 @@ int create_debug_messenger(
       allocation, &debug_utils_messenger);
 
   if (result != VK_SUCCESS)
-    throw me::exception("failed to create debug utils messenger [%s]", me::vulkan::util::get_result_string(result));
+    throw me::exception("failed to create debug utils messenger [%s]", me::util::get_result_string(result));
   return 0;
 }
 
@@ -142,7 +142,7 @@ int create_debug_report(
   VkResult result = vkCreateDebugReportCallbackEXT(instance, &debug_report_callback_create_info,
       allocation, &debug_report_callback);
   if (result != VK_SUCCESS)
-    throw me::exception("failed to create debug report callback [%s]", me::vulkan::util::get_result_string(result));
+    throw me::exception("failed to create debug report callback [%s]", me::util::get_result_string(result));
   return 0;
 }
 

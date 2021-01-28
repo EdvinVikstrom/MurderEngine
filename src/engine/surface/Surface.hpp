@@ -18,7 +18,7 @@ namespace me {
   };
 
 
-  class Surface : public Module {
+  class SurfaceModule : public Module {
 
   public:
 
@@ -56,7 +56,7 @@ namespace me {
 
   public:
 
-    explicit Surface(const string &name, UserCallbacks &user_callbacks)
+    explicit SurfaceModule(const string &name, UserCallbacks &user_callbacks)
       : Module(MODULE_SURFACE_TYPE, name)
     {
       this->user_callbacks = user_callbacks;

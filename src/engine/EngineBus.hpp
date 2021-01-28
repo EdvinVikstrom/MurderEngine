@@ -7,7 +7,7 @@ namespace me {
 
   struct EngineBus {
 
-    const uint32_t module_count;
+    uint32_t module_count;
     class Module** modules;
 
     class Module** begin() const;
@@ -15,9 +15,9 @@ namespace me {
 
     class Module* get_module(const string &name) const;
     class Module* get_module(const uint32_t module_type) const;
-    class Surface* get_active_surface_module() const;
-    class Renderer* get_active_renderer_module() const;
-    class AudioSystem* get_active_audio_module() const;
+    class SurfaceModule* get_active_surface_module() const;
+    class RendererModule* get_active_renderer_module() const;
+    class AudioSystemModule* get_active_audio_module() const;
 
   };
 

@@ -1,6 +1,8 @@
 #ifndef ME_VULKAN_HPP
   #define ME_VULKAN_HPP
 
+#include "Types.hpp"
+
 #include "../Renderer.hpp"
 #include "../../surface/Surface.hpp"
 #include "../../Logger.hpp"
@@ -10,39 +12,13 @@
 
 #include <vulkan/vulkan.h>
 
-namespace me::vulkan {
+namespace me {
 
-  class Vulkan : public Renderer {
+  class Vulkan : public RendererModule {
 
   protected:
 
-    struct QueueFamilyIndices {
-      uint32_t compute_queue = -1;
-      uint32_t graphics_queue = -1;
-      uint32_t present_queue = -1;
-      uint32_t transfer_queue = -1;
-    };
-
-    struct QueueFamilies {
-      VkQueue compute_queue;
-      VkQueue graphics_queue;
-      VkQueue present_queue;
-      VkQueue transfer_queue;
-    };
-
-    struct SwapchainImage {
-      VkImage image;
-      VkImageView image_view;
-      vector<VkFramebuffer, uint32_t> vk_framebuffers;
-      vector<VkBuffer, uint32_t> vk_uniform_buffers;
-      vector<VkDescriptorSet, uint32_t> vk_descriptor_sets; /* supports max 1. see setup_descriptor_pool */
-      vector<VkCommandBuffer, uint32_t> vk_command_buffers;
-
-      vector<VkDeviceMemory, uint32_t> vk_uniform_buffers_memory;
-    };
-
     struct DataStorage {
-      vector<MeshRef*, uint32_t> meshes;
     };
 
     struct RenderInfo {
@@ -55,12 +31,26 @@ namespace me::vulkan {
         ACTIVE_STATE,
         NO_SWAPCHAIN_STATE
       };
+
+      VulkanDevice* device = nullptr;
+      VulkanSwapchain* swapchain = nullptr;
+      VulkanQueue* queue = nullptr;
+      uint32_t swapchain_image_count = 0;
+      VulkanSwapchainImage** swapchain_images = nullptr;
+      uint32_t command_buffer_count = 0;
+      VulkanCommandBuffer** command_buffers = nullptr;
     
       uint8_t flags = 0;
       State state = IDLE_STATE;
       uint32_t frame_index = 0;
       uint32_t image_index = 0;
       static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+    };
+
+    struct PresentationInfo {
+      VulkanDevice* device = nullptr;
+      VulkanSwapchain* swapchain = nullptr;
+      VulkanQueue* queue = nullptr;
     };
 
   protected:
@@ -74,6 +64,7 @@ namespace me::vulkan {
     Logger logger;
 
     allocator alloc;
+    allocator alloc_render_temp;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT vk_debug_utils_messenger;
@@ -82,65 +73,143 @@ namespace me::vulkan {
 
     VkAllocationCallbacks* vk_allocation = nullptr;
     VkInstance vk_instance;
-    VkSurfaceKHR vk_surface;
-    VkSurfaceCapabilitiesKHR vk_surface_capabilities;
-    VkSurfaceFormatKHR vk_surface_format;
-    VkPresentModeKHR vk_surface_present_mode;
-    VkExtent2D vk_surface_extent;
-    VkPhysicalDevice vk_physical_device;
-    VkDevice vk_device;
-    VkSwapchainKHR vk_swapchain;
-    VkFormat vk_swapchain_image_format;
-    VkColorSpaceKHR vk_swapchain_image_color_space;
-    VkExtent2D vk_swapchain_image_extent;
-    VkRenderPass vk_render_pass;
-    VkPipeline vk_pipeline;
-    VkPipelineLayout vk_pipeline_layout;
-    VkDescriptorSetLayout vk_descriptor_set_layout;
-    VkDeviceMemory vk_staging_buffer_memory;
-    VkDeviceMemory vk_vertex_buffer_memory;
-    VkDeviceMemory vk_index_buffer_memory;
-    vector<VkDeviceMemory, uint32_t> vk_uniform_buffers_memory;
-    VkCommandPool vk_graphics_command_pool;
-    VkCommandPool vk_transfer_command_pool;
-    VkDescriptorPool vk_descriptor_pool;
-    vector<SwapchainImage, uint32_t> swapchain_images;
-
-    QueueFamilyIndices queue_family_indices;
-    QueueFamilies queue_families;
-
-    vector<VkSemaphore, uint32_t> vk_image_available_semaphores;
-    vector<VkSemaphore, uint32_t> vk_render_finished_semaphores;
-    vector<VkFence, uint32_t> vk_in_flight_fences;
-    vector<VkFence, uint32_t> vk_images_in_flight_fences;
-
-    vector<SurfaceInfo, uint32_t> surface_infos;
-    vector<SwapchainInfo, uint32_t> swapchain_infos;
-    vector<FramebufferInfo, uint32_t> framebuffer_infos;
-    vector<UniformBufferInfo, uint32_t> uniform_buffer_infos;
-    vector<DescriptorInfo, uint32_t> descriptor_infos;
-    vector<CommandBufferInfo, uint32_t> command_buffer_infos;
-
     DataStorage data_storage;
-    RenderInfo render_info;
 
   public:
 
     explicit Vulkan();
 
-    int init_engine(const EngineInfo &engine_info, Surface* surface) override;
-    int setup_device(const DeviceInfo &device_info, Device &_device) override;
-    int setup_surface(const SurfaceInfo &surface_info) override;
-    int setup_swapchain(const SwapchainInfo &swapchain_info, Swapchain &_swapchain) override;
-    int setup_memory(const MemoryInfo &memory_info, Memory &_memory) override;
-    int setup_render_pass(const RenderPassInfo &render_pass_info, RenderPass &_render_pass) override;
-    int setup_pipeline(const PipelineInfo &pipeline_info, Pipeline &_pipeline) override; /* can only setup 1 pipeline */
-    int setup_framebuffer(const FramebufferInfo &framebuffer_info, Framebuffer &_framebuffer) override;
-    int setup_uniform_buffer(const UniformBufferInfo &uniform_buffer_info, UniformBuffer &_uniform_buffer) override;
-    int setup_descriptor(const DescriptorInfo &descriptor_info, Descriptor &_descriptor) override;
-    int setup_command_buffer(const CommandBufferInfo &command_buffer_info, CommandBuffer &_command_buffer) override;
+    int init_engine(const EngineInitInfo &engine_init_info) override;
 
-    int register_mesh(MeshRef* mesh) override;
+    int enumerate_physical_devices(
+	uint32_t 						&physical_device_count,
+	PhysicalDevice* 					physical_devices
+	) override;
+
+    int create_surface(
+	const SurfaceCreateInfo 				&surface_create_info,
+	Surface 						&surface
+	) override;
+
+    int create_device(
+	const DeviceCreateInfo 					&device_create_info,
+	Device 							&device
+	) override;
+
+    int create_queue(
+	const QueueCreateInfo 					&queue_create_info,
+	Queue 							&queue
+	) override;
+
+    int create_swapchain(
+	const SwapchainCreateInfo 				&swapchain_create_info,
+	Swapchain 						&swapchain
+	) override;
+
+    int create_swapchain_images(
+	const SwapchainImageCreateInfo 				&swapchain_image_create_info,
+	uint32_t 						swapchain_image_count,
+	SwapchainImage* 					swapchain_images
+	) override;
+
+    int create_frames(
+	const FrameCreateInfo 					&frame_create_info,
+	uint32_t 						frame_count,
+	Frame* 							frames
+	) override;
+
+    int create_buffer(
+	const BufferCreateInfo 					&buffer_create_info,
+	Buffer 							&buffer
+	) override;
+
+    int create_render_pass(
+	const RenderPassCreateInfo 				&render_pass_create_info,
+	RenderPass 						&render_pass
+	) override;
+
+    int create_pipeline(
+	const PipelineCreateInfo 				&pipeline_create_info,
+	Pipeline 						&pipeline
+	) override;
+
+    int create_framebuffer(
+	const FramebufferCreateInfo 				&framebuffer_create_info,
+	Framebuffer 						&framebuffer
+	) override;
+
+    int create_descriptor_pool(
+	const DescriptorPoolCreateInfo 				&descriptor_pool_create_info,
+	DescriptorPool 						&descriptor_pool
+	) override;
+
+    int create_descriptors(
+	const DescriptorCreateInfo 				&descriptor_create_info,
+	uint32_t 						descriptor_count,
+	Descriptor* 						descriptors
+	) override;
+
+    int create_command_pool(
+	const CommandPoolCreateInfo 				&command_create_pool_info,
+	CommandPool 						&command_pool
+	) override;
+
+    int create_command_buffers(
+	const CommandBufferCreateInfo 				&command_buffer_create_info,
+	uint32_t 						command_buffer_count,
+	CommandBuffer* 						command_buffers
+	) override;
+
+
+    int buffer_write(
+	const BufferWriteInfo 					&buffer_write_info,
+	Buffer 							buffer
+	) override;
+
+    
+    int cmd_record_start(
+	const CommandInfo 					&command_info,
+	CommandBuffer 						command_buffer
+	) override;
+
+    int cmd_record_stop(
+	const CommandInfo 					&command_info,
+	CommandBuffer 						command_buffer
+	) override;
+
+    int cmd_begin_render_pass(
+	const CmdBeginRenderPassInfo 				&cmd_begin_render_pass_info,
+	CommandBuffer 						command_buffer
+	) override;
+
+    int cmd_end_render_pass(
+	CommandBuffer 						command_buffer
+	) override;
+
+    int cmd_bind_descriptors(
+	const CmdBindDescriptorsInfo 				&cmd_bind_descriptors_info,
+	CommandBuffer 						command_buffer
+	) override;
+
+    int cmd_draw_meshes(
+	const CmdDrawMeshesInfo					&cmd_draw_meshes_info,
+	CommandBuffer 						command_buffer
+	) override;
+
+    int frame_prepare(
+	const FramePrepareInfo 					&frame_prepare_info,
+	FramePresented 						&frame_prepared
+	) override;
+
+    int frame_render(
+	const FrameRenderInfo					&frame_render_info,
+	FrameRendered 						&frame_rendered
+	) override;
+
+    int frame_present(
+	const FramePresentInfo 					&frame_present_info,
+	FramePresented 						&frame_presented
+	) override;
 
   protected:
 
@@ -150,27 +219,73 @@ namespace me::vulkan {
 
     int render(RenderInfo &render_info);
 
-    int setup_instance(const EngineInfo &engine_info, Surface* surface);
+    int setup_instance(const EngineInitInfo &engine_init_info);
 
     int cleanup_instance();
-    int cleanup_surface();
-    int cleanup_device();
-    int cleanup_swapchain();
-    int cleanup_memory();
-    int cleanup_render_pass();
-    int cleanup_pipeline(const array_proxy<Pipeline, uint32_t> &_pipelines);
-    int cleanup_framebuffers(const array_proxy<Framebuffer, uint32_t> &_framebuffers);
-    int cleanup_uniform_buffers(const array_proxy<UniformBuffer, uint32_t> &_uniform_buffers);
-    int cleanup_descriptor_pool();
-    int cleanup_descriptor_sets(const array_proxy<Descriptor, uint32_t> &_descriptors);
-    int cleanup_command_pool();
-    int cleanup_command_buffers(const array_proxy<CommandBuffer, uint32_t> &_command_buffers);
 
-    int refresh_swapchain();
-    int refresh_uniform_buffers(const RenderInfo &render_info);
+    int cleanup_device(
+	const DeviceCleanupInfo &device_cleanup_info,
+	Device device
+	);
 
-    int setup_mesh(const MeshInfo &mesh_info, Mesh* mesh);
-    int cleanup_mesh(Mesh* mesh);
+    int cleanup_surface(
+	const SurfaceCleanupInfo &surface_cleanup_info,
+	Surface surface
+	);
+
+    int cleanup_swapchain(
+	const SwapchainCleanupInfo &swapchain_cleanup_info,
+	Swapchain swapchain
+	);
+
+    int cleanup_swapchain_images(
+	const SwapchainImageCleanupInfo &swapchain_image_cleanup_info,
+	uint32_t swapchain_image_count,
+	SwapchainImage* swapchain_images
+	);
+
+    int cleanup_frames(
+	const FrameCleanupInfo &frame_cleanup_info,
+	uint32_t frame_count,
+	Frame* frames
+	);
+
+    int cleanup_render_pass(
+	const RenderPassCleanupInfo &render_pass_cleanup_info,
+	RenderPass render_pass
+	);
+
+    int cleanup_pipeline(
+	const PipelineCleanupInfo &pipeline_cleanup_info,
+	Pipeline pipeline
+	);
+
+    int cleanup_framebuffer(
+	const FramebufferCleanupInfo &framebuffer_cleanup_info,
+	Framebuffer framebuffer
+	);
+
+    int cleanup_descriptor_pool(
+	const DescriptorPoolCleanupInfo &descriptor_pool_cleanup_info,
+	DescriptorPool descriptor_pool
+	);
+
+    int cleanup_descriptors(
+	const DescriptorCleanupInfo &descriptor_cleanup_info,
+	uint32_t descriptor_count,
+	Descriptor* descriptors
+	);
+
+    int cleanup_command_pool(
+	const CommandPoolCleanupInfo &command_pool_cleanup_info,
+	CommandPool command_pool
+	);
+
+    int cleanup_command_buffers(
+	const CommandBufferCleanupInfo &command_buffer_cleanup_info,
+	uint32_t command_buffer_count,
+	CommandBuffer* command_buffers
+	);
 
 #ifndef NDEBUG
     int setup_debug();

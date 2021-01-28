@@ -1,84 +1,145 @@
 #include "Vulkan.hpp"
 #include "Util.hpp"
-
-static int create_descriptor_pool(
-    VkDevice 					device,
-    VkAllocationCallbacks* 			allocation,
-    uint32_t 					count,
-    VkDescriptorPool 				&descriptor_pool
-    );
-
-static int create_command_pool(
-    VkDevice 					device,
-    VkAllocationCallbacks*			allocation,
-    uint32_t 					queue_family_index,
-    VkCommandPool 				&command_pool
-    );
-
-
-int me::vulkan::Vulkan::setup_memory(const MemoryInfo &memory_info, Memory &_memory)
-{
-  vk_image_available_semaphores.resize(RenderInfo::MAX_FRAMES_IN_FLIGHT);
-  vk_render_finished_semaphores.resize(RenderInfo::MAX_FRAMES_IN_FLIGHT);
-  vk_in_flight_fences.resize(RenderInfo::MAX_FRAMES_IN_FLIGHT);
-  vk_images_in_flight_fences.resize(swapchain_images.size(), VK_NULL_HANDLE);
-
-  VkSemaphoreCreateInfo semaphore_create_info = { };
-  semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-  semaphore_create_info.pNext = nullptr;
-  semaphore_create_info.flags = 0;
-
-  VkFenceCreateInfo fence_create_info = { };
-  fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  fence_create_info.pNext = nullptr;
-  fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-  for (uint32_t i = 0; i < RenderInfo::MAX_FRAMES_IN_FLIGHT; i++)
-  {
-    /* create 'image available' semaphore */
-    VkResult result = vkCreateSemaphore(vk_device, &semaphore_create_info, vk_allocation, &vk_image_available_semaphores[i]);
-    if (result != VK_SUCCESS)
-      throw exception("failed to create semaphore [%s]", util::get_result_string(result));
-
-    /* create 'render finished' semaphore */
-    result = vkCreateSemaphore(vk_device, &semaphore_create_info, vk_allocation, &vk_render_finished_semaphores[i]);
-    if (result != VK_SUCCESS)
-      throw exception("failed to create semaphore [%s]", util::get_result_string(result));
-
-    /* create 'in flight' fence */
-    result = vkCreateFence(vk_device, &fence_create_info, vk_allocation, &vk_in_flight_fences[i]);
-    if (result != VK_SUCCESS)
-      throw exception("failed to create fence [%s]", util::get_result_string(result));
-  }
-
-  create_descriptor_pool(vk_device, vk_allocation, swapchain_images.size(), vk_descriptor_pool);
-  create_command_pool(vk_device, vk_allocation, queue_family_indices.graphics_queue, vk_graphics_command_pool);
-  create_command_pool(vk_device, vk_allocation, queue_family_indices.transfer_queue, vk_transfer_command_pool);
-
-  _memory = 0;
-  return 0;
-}
-
-int me::vulkan::Vulkan::cleanup_memory()
-{
-  vkFreeMemory(vk_device, vk_vertex_buffer_memory, vk_allocation);
-  vkFreeMemory(vk_device, vk_index_buffer_memory, vk_allocation);
-  for (uint32_t i = 0; i < vk_uniform_buffers_memory.size(); i++)
-    vkFreeMemory(vk_device, vk_uniform_buffers_memory[i], vk_allocation);
-
-  for (uint32_t i = 0; i < RenderInfo::MAX_FRAMES_IN_FLIGHT; i++)
-  {
-    vkDestroySemaphore(vk_device, vk_image_available_semaphores[i], vk_allocation);
-    vkDestroySemaphore(vk_device, vk_render_finished_semaphores[i], vk_allocation);
-    vkDestroyFence(vk_device, vk_in_flight_fences[i], vk_allocation);
-  }
-  return 0;
-}
-
-
 #include "Memory.hpp"
 
-int me::vulkan::memory::create_buffer(
+int me::Vulkan::create_descriptor_pool(const DescriptorPoolCreateInfo &descriptor_pool_create_info, DescriptorPool &descriptor_pool)
+{
+  VERIFY_CREATE_INFO(descriptor_pool_create_info, STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
+
+  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(descriptor_pool_create_info.device)->vk_device;
+
+  VkDescriptorPoolCreateInfo vk_descriptor_pool_create_info = {};
+  vk_descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+  vk_descriptor_pool_create_info.pNext = nullptr;
+  vk_descriptor_pool_create_info.flags = 0;
+  vk_descriptor_pool_create_info.maxSets = 1;
+  vk_descriptor_pool_create_info.poolSizeCount = 1;
+  vk_descriptor_pool_create_info.pPoolSizes = nullptr;
+
+  VkDescriptorPool vk_descriptor_pool;
+  VkResult result = vkCreateDescriptorPool(vk_device, &vk_descriptor_pool_create_info, vk_allocation, &vk_descriptor_pool);
+  if (result != VK_SUCCESS)
+    throw exception("failed to create descriptor pool [%s]", util::get_result_string(result));
+
+  descriptor_pool = alloc.allocate<VulkanDescriptorPool>(vk_descriptor_pool);
+  return 0;
+}
+
+int me::Vulkan::create_command_pool(const CommandPoolCreateInfo &command_pool_create_info, CommandPool &command_pool)
+{
+  VERIFY_CREATE_INFO(command_pool_create_info, STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
+
+  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(command_pool_create_info.device)->vk_device;
+  VulkanQueue* queue = reinterpret_cast<VulkanQueue*>(command_pool_create_info.queue);
+
+  VkCommandPoolCreateInfo vk_command_pool_create_info = { };
+  vk_command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  vk_command_pool_create_info.pNext = nullptr;
+  vk_command_pool_create_info.flags = 0;
+  vk_command_pool_create_info.queueFamilyIndex = queue->vk_index;
+
+  VkCommandPool vk_command_pool;
+  VkResult result = vkCreateCommandPool(vk_device, &vk_command_pool_create_info, vk_allocation, &vk_command_pool);
+  if (result != VK_SUCCESS)
+    throw exception("failed to create command pool [%s]", util::get_result_string(result));
+
+  command_pool = alloc.allocate<VulkanCommandPool>(vk_command_pool);
+  return 0;
+}
+
+int me::Vulkan::create_buffer(const BufferCreateInfo &buffer_create_info, Buffer &buffer)
+{
+  VERIFY_CREATE_INFO(buffer_create_info, STRUCTURE_TYPE_BUFFER_CREATE_INFO);
+
+  VkPhysicalDevice vk_physical_device = reinterpret_cast<VulkanPhysicalDevice*>(buffer_create_info.physical_device)->vk_physical_device;
+  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(buffer_create_info.device)->vk_device;
+
+  VkBufferUsageFlags vk_buffer_usage = VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
+  if (buffer_create_info.usage == BUFFER_USAGE_STORAGE)
+    vk_buffer_usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+  if (buffer_create_info.usage == BUFFER_USAGE_VERTEX_BUFFER)
+    vk_buffer_usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+  if (buffer_create_info.usage == BUFFER_USAGE_INDEX_BUFFER)
+    vk_buffer_usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+  if (buffer_create_info.usage == BUFFER_USAGE_UNIFORM_BUFFER)
+    vk_buffer_usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+
+  if (buffer_create_info.write_method == BUFFER_WRITE_METHOD_STANDARD)
+    vk_buffer_usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+  else if (buffer_create_info.write_method == BUFFER_WRITE_METHOD_STAGING)
+    vk_buffer_usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+  VkDeviceSize vk_buffer_size = buffer_create_info.size;
+  VkBuffer vk_buffer;
+  VkDeviceMemory vk_buffer_memory;
+  me::memory::create_buffer(vk_physical_device, vk_device, vk_buffer_size,
+      vk_buffer_usage, VK_SHARING_MODE_EXCLUSIVE,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk_buffer, vk_buffer_memory);
+
+  buffer = alloc.allocate<VulkanBuffer>(vk_buffer, vk_buffer_memory,
+      buffer_create_info.usage, buffer_create_info.write_method, buffer_create_info.size);
+  return 0;
+}
+
+int me::Vulkan::buffer_write(const BufferWriteInfo &buffer_write_info, Buffer buffer_ptr)
+{
+  VkPhysicalDevice vk_physical_device = reinterpret_cast<VulkanPhysicalDevice*>(buffer_write_info.physical_device)->vk_physical_device;
+  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(buffer_write_info.device)->vk_device;
+  VulkanBuffer* buffer = reinterpret_cast<VulkanBuffer*>(buffer_ptr);
+
+  if (buffer_write_info.byte_count > buffer->size)
+    throw exception("trying to write data to buffer larger than the buffer capacity. \e[31m%lu\e[0m > %lu",
+	buffer_write_info.byte_count, buffer->size);
+
+  VkDeviceSize vk_buffer_size = buffer_write_info.byte_count;
+
+  if (buffer->write_method == BUFFER_WRITE_METHOD_STANDARD)
+  {
+    me::memory::map_buffer_memory(vk_device, vk_buffer_size, buffer_write_info.bytes, buffer->vk_memory);
+  }else if (buffer->write_method == BUFFER_WRITE_METHOD_STAGING)
+  {
+    VkQueue vk_queue = reinterpret_cast<VulkanQueue*>(buffer_write_info.queue)->vk_queue;
+    VkCommandPool vk_command_pool = reinterpret_cast<VulkanCommandPool*>(buffer_write_info.command_pool)->vk_command_pool;
+
+    VkBuffer vk_staging_buffer;
+    VkDeviceMemory vk_staging_buffer_memory;
+    me::memory::create_buffer(vk_physical_device, vk_device, vk_buffer_size,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        vk_staging_buffer, vk_staging_buffer_memory);
+
+    /* copy data to staging buffer */
+    me::memory::map_buffer_memory(vk_device, vk_buffer_size, buffer_write_info.bytes, vk_staging_buffer_memory);
+
+    /* copy buffer */
+    me::memory::copy_buffer(vk_device, vk_command_pool, vk_queue, vk_buffer_size, vk_staging_buffer, buffer->vk_buffer);
+
+    /* destroy and free */
+    vkDestroyBuffer(vk_device, vk_staging_buffer, vk_allocation);
+    vkFreeMemory(vk_device, vk_staging_buffer_memory, vk_allocation);
+  }
+  return 0;
+}
+
+int me::Vulkan::cleanup_descriptor_pool(const DescriptorPoolCleanupInfo &descriptor_pool_cleanup_info, DescriptorPool descriptor_pool_ptr)
+{
+  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(descriptor_pool_cleanup_info.device)->vk_device;
+  VulkanDescriptorPool* descriptor_pool = reinterpret_cast<VulkanDescriptorPool*>(descriptor_pool_ptr);
+
+  vkDestroyDescriptorPool(vk_device, descriptor_pool->vk_descriptor_pool, vk_allocation);
+  return 0;
+}
+
+int me::Vulkan::cleanup_command_pool(const CommandPoolCleanupInfo &command_pool_cleanup_info, CommandPool command_pool_ptr)
+{
+  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(command_pool_cleanup_info.device)->vk_device;
+  VulkanCommandPool* command_pool = reinterpret_cast<VulkanCommandPool*>(command_pool_ptr);
+
+  vkDestroyCommandPool(vk_device, command_pool->vk_command_pool, vk_allocation);
+  return 0;
+}
+
+
+int me::memory::create_buffer(
     VkPhysicalDevice 					physical_device,
     VkDevice 						device,
     VkDeviceSize 					buffer_size,
@@ -124,7 +185,7 @@ int me::vulkan::memory::create_buffer(
   return 0;
 }
 
-int me::vulkan::memory::copy_buffer(
+int me::memory::copy_buffer(
     VkDevice 						device,
     VkCommandPool 					command_pool,
     VkQueue 						queue,
@@ -181,7 +242,7 @@ int me::vulkan::memory::copy_buffer(
   return 0;
 }
 
-int me::vulkan::memory::map_buffer_memory(
+int me::memory::map_buffer_memory(
     VkDevice 						device,
     VkDeviceSize 					buffer_size,
     void* 						buffer_data,
@@ -199,7 +260,7 @@ int me::vulkan::memory::map_buffer_memory(
   return 0;
 }
 
-int me::vulkan::memory::get_memory_type(
+int me::memory::get_memory_type(
     VkPhysicalDevice 					physical_device,
     uint32_t 						type_filter,
     VkMemoryPropertyFlags 				memory_property_flags,
@@ -222,7 +283,7 @@ int me::vulkan::memory::get_memory_type(
 }
 
 
-int create_descriptor_pool(
+int me::memory::create_descriptor_pool(
     VkDevice 					device,
     VkAllocationCallbacks* 			allocation,
     uint32_t 					count,
@@ -244,11 +305,11 @@ int create_descriptor_pool(
 
   VkResult result = vkCreateDescriptorPool(device, &descriptor_pool_create_info, allocation, &descriptor_pool);
   if (result != VK_SUCCESS)
-    throw me::exception("failed to create descriptor pool [%s]", me::vulkan::util::get_result_string(result));
+    throw me::exception("failed to create descriptor pool [%s]", me::util::get_result_string(result));
   return 0;
 }
 
-int create_command_pool(
+int me::memory::create_command_pool(
     VkDevice 					device,
     VkAllocationCallbacks*			allocation,
     uint32_t 					queue_family_index,
@@ -263,6 +324,6 @@ int create_command_pool(
  
   VkResult result = vkCreateCommandPool(device, &command_pool_create_info, allocation, &command_pool);
   if (result != VK_SUCCESS)
-    throw me::exception("failed to create command pool [%s]", me::vulkan::util::get_result_string(result));
+    throw me::exception("failed to create command pool [%s]", me::util::get_result_string(result));
   return 0;
 }

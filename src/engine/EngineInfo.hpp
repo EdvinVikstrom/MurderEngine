@@ -15,13 +15,11 @@ namespace me {
 
   struct ApplicationInfo {
     const char* name;
-    const uint32_t version;
+    uint32_t version;
   };
 
   struct EngineInfo {
     ApplicationInfo application_info;
-    uint32_t module_count;
-    class Module** modules;
   };
 
 }

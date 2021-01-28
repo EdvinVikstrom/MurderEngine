@@ -7,7 +7,7 @@
 #include <lme/time.hpp>
 
 me::WindowSurface::WindowSurface(UserCallbacks &user_callbacks)
-  : Surface("glfw", user_callbacks), logger("Window")
+  : SurfaceModule("glfw", user_callbacks), logger("Window")
 {
 }
 
@@ -21,7 +21,7 @@ int me::WindowSurface::initialize(const ModuleInfo module_info)
 
   if (user_callbacks.init_surface == nullptr)
     throw exception("'Surface::user_callbacks' cannot be nullptr");
-  user_callbacks.init_surface(Surface::config);
+  user_callbacks.init_surface(config);
 
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
@@ -79,7 +79,7 @@ int me::WindowSurface::vk_create_surface(VkInstance instance, const VkAllocation
 {
   VkResult result = glfwCreateWindowSurface(instance, glfw_window, allocator, surface);
   if (result != VK_SUCCESS)
-    throw exception("failed to create vulkan surface [%s]", vulkan::util::get_result_string(result));
+    throw exception("failed to create vulkan surface [%s]", util::get_result_string(result));
   return 0;
 }
 
@@ -111,7 +111,7 @@ void me::WindowSurface::glfw_framebuffer_size_callback(GLFWwindow* glfw_window, 
 
   if (instance->user_callbacks.resize_surface != nullptr)
     instance->user_callbacks.resize_surface(width, height);
-  for (pair<Surface::Callbacks::resize_surface_fn*, void*> &resize_surface : instance->Surface::callbacks.resize_surface)
+  for (pair<SurfaceModule::Callbacks::resize_surface_fn*, void*> &resize_surface : instance->callbacks.resize_surface)
     resize_surface.first(width, height, resize_surface.second);
 }
 

@@ -1,0 +1,5 @@
+sources += [
+  "$(DIR)/Main.cpp"
+  "$(DIR)/Game.cpp"
+  "$(DIR)/SceneRenderer.cpp"
+]

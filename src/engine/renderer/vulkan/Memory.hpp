@@ -3,7 +3,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace me::vulkan::memory {
+namespace me::memory {
 
   int create_buffer(
       VkPhysicalDevice 					physical_device,
@@ -37,6 +37,20 @@ namespace me::vulkan::memory {
       uint32_t 						type_filter,
       VkMemoryPropertyFlags 				memory_property_flags,
       uint32_t 						&memory_type
+      );
+
+  int create_descriptor_pool(
+      VkDevice 					device,
+      VkAllocationCallbacks* 			allocation,
+      uint32_t 					count,
+      VkDescriptorPool 				&descriptor_pool
+      );
+
+  int create_command_pool(
+      VkDevice 					device,
+      VkAllocationCallbacks*			allocation,
+      uint32_t 					queue_family_index,
+      VkCommandPool 				&command_pool
       );
 
 }

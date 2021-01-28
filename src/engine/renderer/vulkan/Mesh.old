@@ -27,7 +27,7 @@ static int create_index_buffer(
     );
 
 
-int me::vulkan::Vulkan::setup_mesh(const MeshInfo &mesh_info, Mesh* mesh)
+int me::Vulkan::create_mesh(const MeshCreateInfo &mesh_create_info, Mesh* mesh)
 {
   create_vertex_buffer(vk_physical_device, vk_device, vk_allocation,
       vk_staging_buffer_memory, vk_vertex_buffer_memory, vk_transfer_command_pool,
@@ -64,20 +64,20 @@ int create_vertex_buffer(
 
   /* create staging vertex buffer */
   VkBuffer staging_buffer;
-  me::vulkan::memory::create_buffer(physical_device, device, buffer_size,
+  me::memory::create_buffer(physical_device, device, buffer_size,
       VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_SHARING_MODE_EXCLUSIVE, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
       staging_buffer, staging_buffer_memory);
 
   /* copy data to staging buffer */
-  me::vulkan::memory::map_buffer_memory(device, buffer_size, vertices.data(), staging_buffer_memory);
+  me::memory::map_buffer_memory(device, buffer_size, vertices.data(), staging_buffer_memory);
 
   /* create vertex buffer */
-  me::vulkan::memory::create_buffer(physical_device, device, buffer_size,
+  me::memory::create_buffer(physical_device, device, buffer_size,
       VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE,
       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertex_buffer, vertex_buffer_memory);
 
   /* copy buffer */
-  me::vulkan::memory::copy_buffer(device, transfer_command_pool, transfer_queue, buffer_size, staging_buffer, vertex_buffer);
+  me::memory::copy_buffer(device, transfer_command_pool, transfer_queue, buffer_size, staging_buffer, vertex_buffer);
 
   /* destroy and free */
   vkDestroyBuffer(device, staging_buffer, allocation);

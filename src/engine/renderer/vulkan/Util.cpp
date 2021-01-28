@@ -2,7 +2,7 @@
 
 #include <string.h>
 
-bool me::vulkan::util::has_required_extensions(
+bool me::util::has_required_extensions(
     const array_proxy<VkExtensionProperties> 		&extensions,
     const array_proxy<const char*, uint32_t> 		&required_extensions
     )
@@ -25,7 +25,7 @@ bool me::vulkan::util::has_required_extensions(
   return true;
 }
 
-bool me::vulkan::util::has_required_layers(
+bool me::util::has_required_layers(
     const array_proxy<VkLayerProperties>		&layers,
     const array_proxy<const char*, uint32_t>		&required_layers
     )
@@ -50,7 +50,7 @@ bool me::vulkan::util::has_required_layers(
 
 #define ENUMSTR(i, e) if (e == i) return #e;
 
-const char* me::vulkan::util::get_result_string(
+const char* me::util::get_result_string(
     VkResult 						result
     )
 {
@@ -99,7 +99,7 @@ const char* me::vulkan::util::get_result_string(
 
 #undef ENUMSTR
 
-VkFormat me::vulkan::util::get_vulkan_format(
+VkFormat me::util::get_vulkan_format(
     Format format
     )
 {
@@ -113,6 +113,7 @@ VkFormat me::vulkan::util::get_vulkan_format(
       return VK_FORMAT_R32G32B32_SFLOAT;
     case FORMAT_VECTOR4_32FLOAT:
       return VK_FORMAT_R32G32B32A32_SFLOAT;
+    default:
+      return VK_FORMAT_MAX_ENUM;
   }
-  return VK_FORMAT_MAX_ENUM;
 }

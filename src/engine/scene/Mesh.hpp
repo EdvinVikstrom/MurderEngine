@@ -30,6 +30,8 @@ namespace me {
   protected:
 
 #ifdef ME_USE_VULKAN
+    typedef VkDeviceMemory VertexBufferMemory;
+    typedef VkDeviceMemory IndexBufferMemory;
     typedef VkBuffer VertexBuffer;
     typedef VkBuffer IndexBuffer;
 #endif
@@ -39,6 +41,8 @@ namespace me {
     const vector<Vertex> vertices;
     const vector<Index> indices;
 
+    VertexBufferMemory vertex_buffer_memory;
+    IndexBufferMemory index_buffer_memory;
     VertexBuffer vertex_buffer;
     IndexBuffer index_buffer;
     

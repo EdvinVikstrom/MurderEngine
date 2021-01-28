@@ -3,7 +3,7 @@
 #include <portaudio.h>
 
 me::PortAudio::PortAudio()
-  : AudioSystem("portaudio"), logger("PortAudio")
+  : AudioSystemModule("portaudio"), logger("PortAudio")
 {
   for (size_t i = 0; i < 4; i++)
     tracks[i] = nullptr;

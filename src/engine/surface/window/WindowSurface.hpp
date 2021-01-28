@@ -9,7 +9,7 @@
 
 namespace me {
 
-  class WindowSurface : public Surface {
+  class WindowSurface : public SurfaceModule {
 
   private:
 

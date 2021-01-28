@@ -9,7 +9,7 @@
 
 namespace me {
 
-  class PortAudio : public AudioSystem {
+  class PortAudio : public AudioSystemModule {
 
   private:
 

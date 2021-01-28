@@ -155,18 +155,18 @@ me::Module* me::EngineBus::get_module(const uint32_t module_type) const
   throw exception("no module found with the type '%s'", module_type_name((ModuleTypes) module_type));
 }
 
-me::Surface* me::EngineBus::get_active_surface_module() const
+me::SurfaceModule* me::EngineBus::get_active_surface_module() const
 {
-  return (Surface*) get_module(MODULE_SURFACE_TYPE);
+  return (SurfaceModule*) get_module(MODULE_SURFACE_TYPE);
 }
 
-me::Renderer* me::EngineBus::get_active_renderer_module() const
+me::RendererModule* me::EngineBus::get_active_renderer_module() const
 {
-  return (Renderer*) get_module(MODULE_RENDERER_TYPE);
+  return (RendererModule*) get_module(MODULE_RENDERER_TYPE);
 }
 
-me::AudioSystem* me::EngineBus::get_active_audio_module() const
+me::AudioSystemModule* me::EngineBus::get_active_audio_module() const
 {
-  return (AudioSystem*) get_module(MODULE_AUDIO_TYPE);
+  return (AudioSystemModule*) get_module(MODULE_AUDIO_TYPE);
 }
 /* end class EngineBus */
