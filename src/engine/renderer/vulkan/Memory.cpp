@@ -8,20 +8,25 @@ int me::Vulkan::create_descriptor_pool(const DescriptorPoolCreateInfo &descripto
 
   VkDevice vk_device = reinterpret_cast<VulkanDevice*>(descriptor_pool_create_info.device)->vk_device;
 
+  uint32_t pool_size_count = 1;
+  VkDescriptorPoolSize vk_descriptor_pool_sizes[pool_size_count];
+  vk_descriptor_pool_sizes[0].type = util::get_vulkan_descriptor_type(descriptor_pool_create_info.descriptor_type);
+  vk_descriptor_pool_sizes[0].descriptorCount = descriptor_pool_create_info.descriptor_count;
+
   VkDescriptorPoolCreateInfo vk_descriptor_pool_create_info = {};
   vk_descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   vk_descriptor_pool_create_info.pNext = nullptr;
   vk_descriptor_pool_create_info.flags = 0;
   vk_descriptor_pool_create_info.maxSets = 1;
-  vk_descriptor_pool_create_info.poolSizeCount = 1;
-  vk_descriptor_pool_create_info.pPoolSizes = nullptr;
+  vk_descriptor_pool_create_info.poolSizeCount = pool_size_count;
+  vk_descriptor_pool_create_info.pPoolSizes = vk_descriptor_pool_sizes;
 
   VkDescriptorPool vk_descriptor_pool;
   VkResult result = vkCreateDescriptorPool(vk_device, &vk_descriptor_pool_create_info, vk_allocation, &vk_descriptor_pool);
   if (result != VK_SUCCESS)
     throw exception("failed to create descriptor pool [%s]", util::get_result_string(result));
 
-  descriptor_pool = alloc.allocate<VulkanDescriptorPool>(vk_descriptor_pool);
+  descriptor_pool = alloc.allocate<VulkanDescriptorPool>(vk_descriptor_pool, descriptor_pool_create_info.descriptor_type);
   return 0;
 }
 

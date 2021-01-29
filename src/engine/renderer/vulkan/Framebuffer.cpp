@@ -29,7 +29,7 @@ int me::Vulkan::create_framebuffer(const FramebufferCreateInfo &framebuffer_info
   if (result != VK_SUCCESS)
     throw exception("failed to create framebuffer [%s]", util::get_result_string(result));
 
-  alloc.construct(reinterpret_cast<VulkanFramebuffer*&>(framebuffer), vk_framebuffer);
+  framebuffer = alloc.allocate<VulkanFramebuffer>(vk_framebuffer);
   return 0;
 }
 

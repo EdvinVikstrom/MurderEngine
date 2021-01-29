@@ -211,6 +211,12 @@ namespace me {
 	FramePresented 						&frame_presented
 	) override;
 
+    int get_swapchain_image_count(
+	Device 							device,
+	Swapchain 						swapchain,
+	uint32_t 						&image_count
+	) override;
+
   protected:
 
     int initialize(const ModuleInfo module_info) override;

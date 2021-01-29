@@ -160,6 +160,12 @@ namespace me {
 	FramePresented 						&frame_presented
 	) = 0;
 
+    virtual int get_swapchain_image_count(
+	Device 							device,
+	Swapchain 						swapchain,
+	uint32_t 						&image_count
+	) = 0;
+
   };
 
 }

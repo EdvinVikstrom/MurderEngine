@@ -27,6 +27,10 @@ namespace me::util {
       Format format
       );
 
+  VkDescriptorType get_vulkan_descriptor_type(
+      DescriptorType descriptor_type
+      );
+
 }
 
 #endif

@@ -66,15 +66,8 @@ int me::Vulkan::create_swapchain_images(const SwapchainImageCreateInfo &swapchai
   VkDevice vk_device = reinterpret_cast<VulkanDevice*>(swapchain_image_create_info.device)->vk_device;
   VulkanSwapchain* swapchain = reinterpret_cast<VulkanSwapchain*>(swapchain_image_create_info.swapchain);
 
-  VkResult result = vkGetSwapchainImagesKHR(vk_device, swapchain->vk_swapchain, &swapchain_image_count, nullptr);
-  if (result != VK_SUCCESS)
-    throw exception("failed to get swapchain images count [%s]", util::get_result_string(result));
-
-  if (swapchain_images == nullptr)
-    return 0;
-
   VkImage vk_images[swapchain_image_count];
-  result = vkGetSwapchainImagesKHR(vk_device, swapchain->vk_swapchain, &swapchain_image_count, vk_images);
+  VkResult result = vkGetSwapchainImagesKHR(vk_device, swapchain->vk_swapchain, &swapchain_image_count, vk_images);
   if (result != VK_SUCCESS)
     throw exception("failed to get swapchain images [%s]", util::get_result_string(result));
 
@@ -84,6 +77,17 @@ int me::Vulkan::create_swapchain_images(const SwapchainImageCreateInfo &swapchai
     create_image_view(vk_device, vk_allocation, vk_images[i], swapchain->vk_image_format, vk_image_view);
     swapchain_images[i] = alloc.allocate<VulkanSwapchainImage>(vk_images[i], vk_image_view, (VkFence) VK_NULL_HANDLE);
   }
+  return 0;
+}
+
+int me::Vulkan::get_swapchain_image_count(Device device, Swapchain swapchain, uint32_t &image_count)
+{
+  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(device)->vk_device;
+  VkSwapchainKHR vk_swapchain = reinterpret_cast<VulkanSwapchain*>(swapchain)->vk_swapchain;
+
+  VkResult result = vkGetSwapchainImagesKHR(vk_device, vk_swapchain, &image_count, nullptr);
+  if (result != VK_SUCCESS)
+    throw exception("failed to get swapchain images count [%s]", util::get_result_string(result));
   return 0;
 }
 

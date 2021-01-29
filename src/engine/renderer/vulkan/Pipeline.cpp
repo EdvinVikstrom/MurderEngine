@@ -200,18 +200,23 @@ int me::Vulkan::create_descriptors(const DescriptorCreateInfo &descriptor_create
   VulkanDescriptorPool* descriptor_pool = reinterpret_cast<VulkanDescriptorPool*>(descriptor_create_info.descriptor_pool);
   VulkanPipeline* pipeline = reinterpret_cast<VulkanPipeline*>(descriptor_create_info.pipeline);
 
+  if (descriptor_create_info.descriptor_type != descriptor_pool->type)
+    throw exception("in 'create_descriptors()' DescriptorCreateInfo::descriptor_type must be the same as DescriptorPool::descriptor_type. %s != \e[33m%s\e[0m",
+	descriptor_type_name(descriptor_create_info.descriptor_type), descriptor_type_name(descriptor_pool->type));
+
   if (descriptor_create_info.buffer_count != descriptor_count)
-    throw exception("in 'create_descriptors()' DescriptorCreateInfo::buffer_count must be the same as 'descriptor_count'. \e[31m%u\e[0m != %u",	
+    throw exception("in 'create_descriptors()' DescriptorCreateInfo::buffer_count must be the same as 'descriptor_count'. %u != \e[33m%u\e[0m",	
 	descriptor_create_info.buffer_count, descriptor_count);
 
-  VkDescriptorSetLayout vk_descriptor_set_layouts[descriptor_count];
+  uint32_t descriptor_set_layout_count = 1;
+  VkDescriptorSetLayout vk_descriptor_set_layouts[descriptor_set_layout_count];
   vk_descriptor_set_layouts[0] = pipeline->vk_descriptor_set_layout;
 
   VkDescriptorSetAllocateInfo vk_descriptor_set_allocate_info = { };
   vk_descriptor_set_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   vk_descriptor_set_allocate_info.pNext = nullptr;
   vk_descriptor_set_allocate_info.descriptorPool = descriptor_pool->vk_descriptor_pool;
-  vk_descriptor_set_allocate_info.descriptorSetCount = descriptor_count;
+  vk_descriptor_set_allocate_info.descriptorSetCount = descriptor_set_layout_count;
   vk_descriptor_set_allocate_info.pSetLayouts = vk_descriptor_set_layouts;
 
   VkDescriptorSet vk_descriptor_sets[descriptor_count];
@@ -223,30 +228,26 @@ int me::Vulkan::create_descriptors(const DescriptorCreateInfo &descriptor_create
   {
     VulkanBuffer* buffer = reinterpret_cast<VulkanBuffer*>(&descriptor_create_info.buffers[i]);
 
-    VkDescriptorType vk_descriptor_type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
-    if (descriptor_create_info.descriptor_type == DESCRIPTOR_TYPE_UNIFORM)
-      vk_descriptor_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    VkDescriptorBufferInfo vk_descriptor_buffer_info = { };
+    vk_descriptor_buffer_info.buffer = buffer->vk_buffer;
+    vk_descriptor_buffer_info.offset = descriptor_create_info.offset;
+    vk_descriptor_buffer_info.range = descriptor_create_info.range;
 
-    VkDescriptorBufferInfo descriptor_buffer_info = { };
-    descriptor_buffer_info.buffer = (buffer + i)->vk_buffer;
-    descriptor_buffer_info.offset = descriptor_create_info.offset;
-    descriptor_buffer_info.range = descriptor_create_info.range;
+    VkWriteDescriptorSet vk_write_descriptor_set = { };
+    vk_write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    vk_write_descriptor_set.pNext = nullptr;
+    vk_write_descriptor_set.dstSet = vk_descriptor_sets[i];
+    vk_write_descriptor_set.dstBinding = 0;
+    vk_write_descriptor_set.dstArrayElement = 0;
+    vk_write_descriptor_set.descriptorCount = 1;
+    vk_write_descriptor_set.descriptorType = util::get_vulkan_descriptor_type(descriptor_create_info.descriptor_type);
+    vk_write_descriptor_set.pImageInfo = nullptr;
+    vk_write_descriptor_set.pBufferInfo = &vk_descriptor_buffer_info;
+    vk_write_descriptor_set.pTexelBufferView = nullptr;
 
-    VkWriteDescriptorSet write_descriptor_set = { };
-    write_descriptor_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    write_descriptor_set.pNext = nullptr;
-    write_descriptor_set.dstSet = vk_descriptor_sets[i];
-    write_descriptor_set.dstBinding = 0;
-    write_descriptor_set.dstArrayElement = 0;
-    write_descriptor_set.descriptorCount = 1;
-    write_descriptor_set.descriptorType = vk_descriptor_type;
-    write_descriptor_set.pImageInfo = nullptr;
-    write_descriptor_set.pBufferInfo = &descriptor_buffer_info;
-    write_descriptor_set.pTexelBufferView = nullptr;
+    vkUpdateDescriptorSets(vk_device, 1, &vk_write_descriptor_set, 0, nullptr);
 
-    vkUpdateDescriptorSets(vk_device, 1, &write_descriptor_set, 0, nullptr);
-
-    descriptors[i] = alloc.allocate<VulkanDescriptor>(vk_descriptor_sets[i], descriptor_create_info.descriptor_type);
+    descriptors[i] = alloc.allocate<VulkanDescriptor>(vk_descriptor_sets[i]);
   }
   return 0;
 }

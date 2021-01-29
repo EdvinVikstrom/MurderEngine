@@ -78,11 +78,11 @@ namespace me {
 
   struct VulkanDescriptorPool {
     VkDescriptorPool vk_descriptor_pool;
+    DescriptorType type;
   };
 
   struct VulkanDescriptor {
     VkDescriptorSet vk_descriptor_set;
-    DescriptorType type;
   };
 
   struct VulkanCommandPool {

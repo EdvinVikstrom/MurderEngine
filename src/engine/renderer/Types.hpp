@@ -157,7 +157,7 @@ namespace me {
   };
   
   struct ShaderAttributeInfo {
-    const char name[255];
+    const char* name;
     uint32_t binding;
     uint32_t location;
     uint32_t offset;
@@ -166,7 +166,7 @@ namespace me {
   
   
   struct EngineInitInfo {
-    EngineInfo* engine_info;
+    const EngineInfo* engine_info;
     uint32_t extension_count;
     const char** extensions;
     bool debug;
@@ -239,7 +239,6 @@ namespace me {
   struct RasterizerCreateInfo {
     StructureType type;
     void* next;
-    Device device;
     PolygonMode polygon_mode;
     FrontFace front_face;
     CullMode cull_mode;
@@ -248,14 +247,12 @@ namespace me {
   struct MultisamplingCreateInfo {
     StructureType type;
     void* next;
-    Device device;
     SampleCount samples;
   };
   
   struct ShaderCreateInfo {
     StructureType type;
     void* next;
-    Device device;
     uint32_t vertex_binding_count;
     ShaderBindingInfo* vertex_bindings;
     uint32_t vertex_attribute_count;
@@ -294,6 +291,8 @@ namespace me {
     StructureType type;
     void* next;
     Device device;
+    DescriptorType descriptor_type;
+    uint32_t descriptor_count;
   };
   
   struct DescriptorCreateInfo {
@@ -420,8 +419,8 @@ namespace me {
   
   struct CmdBeginRenderPassInfo {
     Swapchain swapchain;
-    Framebuffer framebuffer;
     RenderPass render_pass;
+    Framebuffer framebuffer;
     float clear_values[4];
   };
   
@@ -439,6 +438,7 @@ namespace me {
 
 
   const char* structure_type_name(StructureType type);
+  const char* descriptor_type_name(DescriptorType type);
 
 }
 

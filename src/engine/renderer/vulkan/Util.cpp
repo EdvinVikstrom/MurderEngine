@@ -117,3 +117,16 @@ VkFormat me::util::get_vulkan_format(
       return VK_FORMAT_MAX_ENUM;
   }
 }
+
+VkDescriptorType me::util::get_vulkan_descriptor_type(
+    DescriptorType descriptor_type
+    )
+{
+  switch (descriptor_type)
+  {
+    case DESCRIPTOR_TYPE_UNIFORM:
+      return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    default:
+      return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+  }
+}
