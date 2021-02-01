@@ -1,13 +1,12 @@
 #ifndef ME_MESH_HPP
   #define ME_MESH_HPP
 
+#include "Material.hpp"
+#include "../renderer/Types.hpp"
+
 #include <lme/math/vector.hpp>
 #include <lme/vector.hpp>
 #include <lme/string.hpp>
-
-#ifdef ME_USE_VULKAN
-  #include <vulkan/vulkan.h>
-#endif
 
 namespace me {
 
@@ -22,50 +21,35 @@ namespace me {
     math::vec2f tex_coord;
     math::vec4f color;
   };
-  typedef uint32_t Index;
+
+  struct Index {
+    uint32_t index;
+  };
 
   /* mesh class for storing vertices, indices and materials */
   class Mesh {
 
-  protected:
-
-#ifdef ME_USE_VULKAN
-    typedef VkDeviceMemory VertexBufferMemory;
-    typedef VkDeviceMemory IndexBufferMemory;
-    typedef VkBuffer VertexBuffer;
-    typedef VkBuffer IndexBuffer;
-#endif
-
   public:
 
-    const vector<Vertex> vertices;
-    const vector<Index> indices;
+    string identifier;
+    vector<Vertex> vertices;
+    vector<Index> indices;
 
-    VertexBufferMemory vertex_buffer_memory;
-    IndexBufferMemory index_buffer_memory;
-    VertexBuffer vertex_buffer;
-    IndexBuffer index_buffer;
-    
-    Mesh(const vector<Vertex> &vertices, const vector<Index> &indices)
-      : vertices(vertices), indices(indices)
-    {
-    }
+    Buffer vertex_buffer;
+    Buffer index_buffer;
 
   };
 
   /* mesh reference class for storing a pointer to a mesh and flags */
-  class MeshRef {
+  class MeshItem {
 
   public:
 
+    string identifier;
     Mesh* mesh;
+    Material* material;
+    math::vec3f position, rotation, scale;
     uint16_t flags;
-
-    MeshRef(Mesh* mesh, uint16_t flags)
-    {
-      this->mesh = mesh;
-      this->flags = flags;
-    }
 
   };
 

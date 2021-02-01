@@ -17,7 +17,7 @@ int me::Vulkan::create_descriptor_pool(const DescriptorPoolCreateInfo &descripto
   vk_descriptor_pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   vk_descriptor_pool_create_info.pNext = nullptr;
   vk_descriptor_pool_create_info.flags = 0;
-  vk_descriptor_pool_create_info.maxSets = 1;
+  vk_descriptor_pool_create_info.maxSets = descriptor_pool_create_info.descriptor_count;
   vk_descriptor_pool_create_info.poolSizeCount = pool_size_count;
   vk_descriptor_pool_create_info.pPoolSizes = vk_descriptor_pool_sizes;
 

@@ -18,6 +18,18 @@ static int create_queue(me::RendererModule* renderer, me::Device device, me::Que
 SceneRenderer::SceneRenderer()
   : Module(me::MODULE_LOGIC_TYPE, "scene_renderer")
 {
+  mesh = new me::Mesh;
+  mesh->vertices.push_back({{-0.5F, -0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {0.0F, 1.0F, 1.0F, 1.0F}});
+  mesh->vertices.push_back({{0.5F, -0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {1.0F, 1.0F, 0.0F, 1.0F}});
+  mesh->vertices.push_back({{0.5F, 0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {0.0F, 0.0F, 1.0F, 1.0F}});
+  mesh->vertices.push_back({{-0.5F, 0.5F, 0.0F}, {0.0F, 0.0F, 0.0F}, {0.0F, 0.0F}, {1.0F, 1.0F, 0.0F, 1.0F}});
+
+  mesh->indices.push_back({0});
+  mesh->indices.push_back({1});
+  mesh->indices.push_back({2});
+  mesh->indices.push_back({2});
+  mesh->indices.push_back({3});
+  mesh->indices.push_back({0});
 }
 
 int SceneRenderer::initialize(const me::ModuleInfo module_info)
@@ -31,7 +43,13 @@ int SceneRenderer::initialize(const me::ModuleInfo module_info)
   uint32_t extension_count;
   const char** extensions = surface_module->vk_get_required_surface_extensions(extension_count);
 
-  renderer->init_engine({module_info.engine_info, extension_count, extensions, true});
+  me::EngineInitInfo engine_init_info = {};
+  engine_init_info.engine_info = module_info.engine_info;
+  engine_init_info.alloc = me::allocator();
+  engine_init_info.extension_count = extension_count;
+  engine_init_info.extensions = extensions;
+  engine_init_info.debug = false;
+  renderer->init_engine(engine_init_info);
 
   /* getting all the physical devices */
   uint32_t physical_device_count;
@@ -84,7 +102,6 @@ int SceneRenderer::initialize(const me::ModuleInfo module_info)
   renderer->create_swapchain_images(swapchain_image_create_info, swapchain_image_count, swapchain_images.data());
 
   /* creating frames */
-  static constexpr uint32_t FRAME_COUNT = 2;
   frames.resize(FRAME_COUNT);
   me::FrameCreateInfo frame_create_info = {};
   frame_create_info.type = me::STRUCTURE_TYPE_FRAME_CREATE_INFO;
@@ -274,6 +291,14 @@ int SceneRenderer::initialize(const me::ModuleInfo module_info)
   draw_command_buffers.resize(swapchain_images.size());
   renderer->create_command_buffers(command_buffer_create_info, swapchain_images.size(), draw_command_buffers.data());
 
+  /* creating mesh */
+  me::SetupMeshInfo setup_mesh_info = {};
+  setup_mesh_info.physical_device = physical_device;
+  setup_mesh_info.device = device;
+  setup_mesh_info.transfer_queue = transfer_queue;
+  setup_mesh_info.transfer_pool = transfer_command_pool;
+  renderer->setup_mesh(setup_mesh_info, mesh);
+
   for (uint32_t i = 0; i < draw_command_buffers.size(); i++)
   {
     me::CommandBuffer command_buffer = draw_command_buffers[i];
@@ -284,10 +309,22 @@ int SceneRenderer::initialize(const me::ModuleInfo module_info)
     cmd_begin_render_pass_info.render_pass = render_pass;
     cmd_begin_render_pass_info.framebuffer = framebuffers[i];
     cmd_begin_render_pass_info.clear_values[0] = 0.0F;
-    cmd_begin_render_pass_info.clear_values[1] = 1.0F;
+    cmd_begin_render_pass_info.clear_values[1] = 0.0F;
     cmd_begin_render_pass_info.clear_values[2] = 0.0F;
     cmd_begin_render_pass_info.clear_values[3] = 1.0F;
     renderer->cmd_begin_render_pass(cmd_begin_render_pass_info, command_buffer);
+
+    me::CmdBindDescriptorsInfo cmd_bind_descriptors_info = {};
+    cmd_bind_descriptors_info.pipeline = pipeline;
+    cmd_bind_descriptors_info.descriptor_count = 1;
+    cmd_bind_descriptors_info.descriptors = &descriptors[i];
+    renderer->cmd_bind_descriptors(cmd_bind_descriptors_info, command_buffer);
+
+    me::CmdDrawMeshesInfo cmd_draw_meshes_info = {};
+    cmd_draw_meshes_info.pipeline = pipeline;
+    cmd_draw_meshes_info.mesh_count = 1;
+    cmd_draw_meshes_info.meshes = &mesh;
+    renderer->cmd_draw_meshes(cmd_draw_meshes_info, command_buffer);
 
     renderer->cmd_end_render_pass(command_buffer);
 
@@ -298,10 +335,109 @@ int SceneRenderer::initialize(const me::ModuleInfo module_info)
 
 int SceneRenderer::terminate(const me::ModuleInfo module_info)
 {
+  me::RendererModule* renderer = module_info.engine_bus->get_active_renderer_module();
+  me::CommandBufferCleanupInfo command_buffer_cleanup_info = {};
+  command_buffer_cleanup_info.device = device;
+  command_buffer_cleanup_info.command_pool = graphics_command_pool;
+  renderer->cleanup_command_buffers(command_buffer_cleanup_info, draw_command_buffers.size(), draw_command_buffers.data());
+
+  me::CommandPoolCleanupInfo command_pool_cleanup_info = {};
+  command_pool_cleanup_info.device = device;
+  renderer->cleanup_command_pool(command_pool_cleanup_info, graphics_command_pool);
+
+  me::DescriptorCleanupInfo descriptor_cleanup_info = {};
+  descriptor_cleanup_info.device = device;
+  descriptor_cleanup_info.descriptor_pool = descriptor_pool;
+  renderer->cleanup_descriptors(descriptor_cleanup_info, descriptors.size(), descriptors.data());
+
+  me::DescriptorPoolCleanupInfo descriptor_pool_cleanup_info = {};
+  descriptor_pool_cleanup_info.device = device;
+  renderer->cleanup_descriptor_pool(descriptor_pool_cleanup_info, descriptor_pool);
+
+  me::FramebufferCleanupInfo framebuffer_cleanup_info = {};
+  framebuffer_cleanup_info.device = device;
+  for (me::Framebuffer &framebuffer : framebuffers)
+    renderer->cleanup_framebuffer(framebuffer_cleanup_info, framebuffer);
+
+  me::PipelineCleanupInfo pipeline_cleanup_info = {};
+  pipeline_cleanup_info.device = device;
+  renderer->cleanup_pipeline(pipeline_cleanup_info, pipeline);
+
+  me::RenderPassCleanupInfo render_pass_cleanup_info = {};
+  render_pass_cleanup_info.device = device;
+  renderer->cleanup_render_pass(render_pass_cleanup_info, render_pass);
+
+  me::FrameCleanupInfo frame_cleanup_info = {};
+  frame_cleanup_info.device = device;
+  renderer->cleanup_frames(frame_cleanup_info, frames.size(), frames.data());
+
+  me::SwapchainImageCleanupInfo swapchain_image_cleanup_info = {};
+  swapchain_image_cleanup_info.device = device;
+  renderer->cleanup_swapchain_images(swapchain_image_cleanup_info, swapchain_images.size(), swapchain_images.data());
+
+  me::SwapchainCleanupInfo swapchain_cleanup_info = {};
+  swapchain_cleanup_info.device = device;
+  renderer->cleanup_swapchain(swapchain_cleanup_info, swapchain);
+
+  me::DeviceCleanupInfo device_cleanup_info = {};
+  renderer->cleanup_device(device_cleanup_info, device);
+
+  me::SurfaceCleanupInfo surface_cleanup_info = {};
+  surface_cleanup_info.physical_device = physical_device;
+  renderer->cleanup_surface(surface_cleanup_info, surface);
+
+  renderer->terminate_engine();
   return 0;
 }
 
 int SceneRenderer::tick(const me::ModuleInfo module_info)
 {
+  me::RendererModule* renderer = module_info.engine_bus->get_active_renderer_module();
+
+  /* prepare */
+  me::FramePrepareInfo frame_prepare_info = {};
+  frame_prepare_info.device = device;
+  frame_prepare_info.swapchain = swapchain;
+  frame_prepare_info.frame = frames[frame_index];
+
+  me::FramePrepared frame_prepared;
+  renderer->frame_prepare(frame_prepare_info, frame_prepared);
+
+  uint32_t image_index;
+  renderer->frame_prepared_get_image_index(frame_prepared, image_index);
+
+  /* render */
+  me::FrameRenderInfo frame_render_info = {};
+  frame_render_info.device = device;
+  frame_render_info.queue = graphics_queue;
+  frame_render_info.prepared = frame_prepared;
+  frame_render_info.image = swapchain_images[image_index];
+  frame_render_info.frame = frames[frame_index];
+  frame_render_info.image_index = image_index;
+  frame_render_info.frame_index = frame_index;
+  frame_render_info.command_buffer_count = draw_command_buffers.size();
+  frame_render_info.command_buffers = draw_command_buffers.data();
+
+  me::FrameRendered frame_rendered;
+  renderer->frame_render(frame_render_info, frame_rendered);
+
+  /* present */
+  me::FramePresentInfo frame_present_info = {};
+  frame_present_info.device = device;
+  frame_present_info.queue = present_queue;
+  frame_present_info.rendered = frame_rendered;
+  frame_present_info.image = swapchain_images[image_index];
+  frame_present_info.frame = frames[frame_index];
+  frame_present_info.image_index = image_index;
+  frame_present_info.frame_index = frame_index;
+  frame_present_info.swapchain_count = 1;
+  frame_present_info.swapchains = &swapchain;
+
+  me::FramePresented frame_presented;
+  renderer->frame_present(frame_present_info, frame_presented);
+
+  frame_index++;
+  if (frame_index >= FRAME_COUNT)
+    frame_index = 0;
   return 0;
 }

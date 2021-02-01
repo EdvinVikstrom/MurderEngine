@@ -11,6 +11,10 @@ class SceneRenderer : public me::Module {
 
 protected:
 
+  static constexpr uint32_t FRAME_COUNT = 2;
+
+  me::Mesh* mesh;
+
   struct UniformBufferObject {
     me::math::mat4f view;
     me::math::mat4f model;
@@ -36,6 +40,8 @@ protected:
   me::CommandPool graphics_command_pool;
   me::CommandPool transfer_command_pool;
   me::vector<me::CommandBuffer> draw_command_buffers;
+
+  uint32_t frame_index = 0;
 
 public:
 

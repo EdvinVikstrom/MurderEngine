@@ -1,6 +1,7 @@
 LIBME_ROOT = "$(DIR)/libme"
 GLFW_ROOT = "$(DIR)/glfw"
 PORTAUDIO_ROOT = "$(DIR)/portaudio"
+RAPIDXML_ROOT = "$(DIR)/rapidxml"
 
 if $PLATFORM == "android" then
   ANDROID_NDK_ROOT = "/opt/android-ndk/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr"
@@ -11,6 +12,7 @@ include_path: [
   "$(LIBME_ROOT)/include"
   "$(GLFW_ROOT)/include"
   "$(PORTAUDIO_ROOT)/include"
+  "$(RAPIDXML_ROOT)/include"
 ]
 
 include: [

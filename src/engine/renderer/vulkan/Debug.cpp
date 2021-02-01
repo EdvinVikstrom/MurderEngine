@@ -3,6 +3,7 @@
 #include "Vulkan.hpp"
 #include "Util.hpp"
 
+#ifndef NDEBUG
 static int create_debug_messenger(
     VkInstance 						instance,
     VkAllocationCallbacks* 				allocation,
@@ -18,12 +19,15 @@ static int create_debug_report(
     PFN_vkDebugReportCallbackEXT			callback,
     VkDebugReportCallbackEXT 				&debug_report_callback
     );
+#endif
 
 
 int me::Vulkan::setup_debug()
 {
+#ifndef NDEBUG
   create_debug_messenger(vk_instance, vk_allocation, &logger, debug_callback, vk_debug_utils_messenger);
   create_debug_report(vk_instance, vk_allocation, &logger, debug_callback, vk_debug_report_callback);
+#endif
   return 0;
 }
 
@@ -84,6 +88,7 @@ int me::Vulkan::cleanup_debug()
 }
 
 
+#ifndef NDEBUG
 int create_debug_messenger(
     VkInstance 						instance,
     VkAllocationCallbacks* 				allocation,
@@ -145,5 +150,6 @@ int create_debug_report(
     throw me::exception("failed to create debug report callback [%s]", me::util::get_result_string(result));
   return 0;
 }
+#endif
 
 #endif

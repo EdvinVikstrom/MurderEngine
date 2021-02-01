@@ -18,43 +18,6 @@ namespace me {
 
   protected:
 
-    struct DataStorage {
-    };
-
-    struct RenderInfo {
-      enum Flag : uint8_t {
-        FRAMEBUFFER_RESIZED_FLAG_BIT = 1
-      };
-    
-      enum State : uint8_t {
-        IDLE_STATE,
-        ACTIVE_STATE,
-        NO_SWAPCHAIN_STATE
-      };
-
-      VulkanDevice* device = nullptr;
-      VulkanSwapchain* swapchain = nullptr;
-      VulkanQueue* queue = nullptr;
-      uint32_t swapchain_image_count = 0;
-      VulkanSwapchainImage** swapchain_images = nullptr;
-      uint32_t command_buffer_count = 0;
-      VulkanCommandBuffer** command_buffers = nullptr;
-    
-      uint8_t flags = 0;
-      State state = IDLE_STATE;
-      uint32_t frame_index = 0;
-      uint32_t image_index = 0;
-      static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-    };
-
-    struct PresentationInfo {
-      VulkanDevice* device = nullptr;
-      VulkanSwapchain* swapchain = nullptr;
-      VulkanQueue* queue = nullptr;
-    };
-
-  protected:
-
     vector<const char*, uint32_t> required_extensions;
     vector<const char*, uint32_t> required_layers;
 
@@ -64,22 +27,26 @@ namespace me {
     Logger logger;
 
     allocator alloc;
-    allocator alloc_render_temp;
 
 #ifndef NDEBUG
     VkDebugUtilsMessengerEXT vk_debug_utils_messenger;
     VkDebugReportCallbackEXT vk_debug_report_callback;
 #endif
 
+    bool debugging;
     VkAllocationCallbacks* vk_allocation = nullptr;
     VkInstance vk_instance;
-    DataStorage data_storage;
 
   public:
 
     explicit Vulkan();
 
-    int init_engine(const EngineInitInfo &engine_init_info) override;
+    int init_engine(
+	const EngineInitInfo &engine_init_info
+	) override;
+
+    int terminate_engine(
+	) override;
 
     int enumerate_physical_devices(
 	uint32_t 						&physical_device_count,
@@ -217,81 +184,92 @@ namespace me {
 	uint32_t 						&image_count
 	) override;
 
+    int frame_prepared_get_image_index(
+	FramePrepared 						frame_prepared,
+	uint32_t 						&image_index
+	) override;
+
+    int setup_mesh(
+	const SetupMeshInfo 					&setup_mesh_info,
+	Mesh* 							mesh
+	) override;
+
   protected:
 
     int initialize(const ModuleInfo module_info) override;
     int terminate(const ModuleInfo module_info) override;
     int tick(const ModuleInfo module_info) override;
 
-    int render(RenderInfo &render_info);
-
     int setup_instance(const EngineInitInfo &engine_init_info);
-
     int cleanup_instance();
 
-    int cleanup_device(
-	const DeviceCleanupInfo &device_cleanup_info,
-	Device device
-	);
+  public:
 
     int cleanup_surface(
 	const SurfaceCleanupInfo &surface_cleanup_info,
 	Surface surface
-	);
+	) override;
+
+    int cleanup_device(
+	const DeviceCleanupInfo &device_cleanup_info,
+	Device device
+	) override;
 
     int cleanup_swapchain(
 	const SwapchainCleanupInfo &swapchain_cleanup_info,
 	Swapchain swapchain
-	);
+	) override;
 
     int cleanup_swapchain_images(
 	const SwapchainImageCleanupInfo &swapchain_image_cleanup_info,
 	uint32_t swapchain_image_count,
 	SwapchainImage* swapchain_images
-	);
+	) override;
 
     int cleanup_frames(
 	const FrameCleanupInfo &frame_cleanup_info,
 	uint32_t frame_count,
 	Frame* frames
-	);
+	) override;
 
     int cleanup_render_pass(
 	const RenderPassCleanupInfo &render_pass_cleanup_info,
 	RenderPass render_pass
-	);
+	) override;
 
     int cleanup_pipeline(
 	const PipelineCleanupInfo &pipeline_cleanup_info,
 	Pipeline pipeline
-	);
+	) override;
 
     int cleanup_framebuffer(
 	const FramebufferCleanupInfo &framebuffer_cleanup_info,
 	Framebuffer framebuffer
-	);
+	) override;
 
     int cleanup_descriptor_pool(
 	const DescriptorPoolCleanupInfo &descriptor_pool_cleanup_info,
 	DescriptorPool descriptor_pool
-	);
+	) override;
 
     int cleanup_descriptors(
 	const DescriptorCleanupInfo &descriptor_cleanup_info,
 	uint32_t descriptor_count,
 	Descriptor* descriptors
-	);
+	) override;
 
     int cleanup_command_pool(
 	const CommandPoolCleanupInfo &command_pool_cleanup_info,
 	CommandPool command_pool
-	);
+	) override;
 
     int cleanup_command_buffers(
 	const CommandBufferCleanupInfo &command_buffer_cleanup_info,
 	uint32_t command_buffer_count,
 	CommandBuffer* command_buffers
-	);
+	) override;
+
+  protected:
 
 #ifndef NDEBUG
     int setup_debug();

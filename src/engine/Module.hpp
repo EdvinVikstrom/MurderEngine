@@ -5,8 +5,6 @@
 #include "EngineBus.hpp"
 #include "EngineInfo.hpp"
 
-#include "memory/MemoryAlloc.hpp"
-
 #include <lme/string.hpp>
 
 namespace me {
@@ -35,7 +33,7 @@ namespace me {
     mutable Semaphore* semaphore;
     const EngineBus* engine_bus;
     const EngineInfo* engine_info;
-    const MemoryAlloc alloc;
+    const allocator alloc;
   };
 
 
@@ -82,9 +80,10 @@ namespace me {
   {
     switch (type)
     {
+      case MODULE_SURFACE_TYPE: return "SURFACE";
       case MODULE_RENDERER_TYPE: return "RENDERER";
       case MODULE_AUDIO_TYPE: return "AUDIO";
-      case MODULE_SURFACE_TYPE: return "SURFACE";
+      case MODULE_LOGIC_TYPE: return "LOGIC";
       case MODULE_IO_TYPE: return "IO";
       case MODULE_OTHER_TYPE: return "OTHER";
       default: return "";

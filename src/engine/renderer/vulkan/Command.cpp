@@ -117,18 +117,20 @@ int me::Vulkan::cmd_draw_meshes(const CmdDrawMeshesInfo &cmd_draw_meshes_info, C
   for (uint32_t i = 0; i < cmd_draw_meshes_info.mesh_count; i++)
   {
     Mesh* mesh = cmd_draw_meshes_info.meshes[i];
+    VulkanBuffer* vertex_buffer = reinterpret_cast<VulkanBuffer*>(mesh->vertex_buffer);
+    VulkanBuffer* index_buffer = reinterpret_cast<VulkanBuffer*>(mesh->index_buffer);
 
     /* get vertex buffers and offsets */
     const size_t vertex_buffer_count = 1;
-    VkBuffer vertex_buffers[vertex_buffer_count] = {mesh->vertex_buffer};
-    VkDeviceSize offsets[vertex_buffer_count] = {0};
+    VkBuffer vk_vertex_buffers[vertex_buffer_count] = {vertex_buffer->vk_buffer};
+    VkDeviceSize vk_offsets[vertex_buffer_count] = {0};
 
     /* get index buffer */
-    VkBuffer index_buffer = mesh->index_buffer;
+    VkBuffer vk_index_buffer = index_buffer->vk_buffer;
 
     vkCmdBindPipeline(vulkan_command_buffer->vk_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->vk_pipeline);
-    vkCmdBindVertexBuffers(vulkan_command_buffer->vk_command_buffer, 0, vertex_buffer_count, vertex_buffers, offsets);
-    vkCmdBindIndexBuffer(vulkan_command_buffer->vk_command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(vulkan_command_buffer->vk_command_buffer, 0, vertex_buffer_count, vk_vertex_buffers, vk_offsets);
+    vkCmdBindIndexBuffer(vulkan_command_buffer->vk_command_buffer, vk_index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
     vkCmdDrawIndexed(vulkan_command_buffer->vk_command_buffer, static_cast<uint32_t>(mesh->indices.size()), 1, 0, 0, 0);
   }

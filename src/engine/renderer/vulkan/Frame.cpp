@@ -46,7 +46,7 @@ int me::Vulkan::cleanup_frames(const FrameCleanupInfo &frame_cleanup_info, uint3
 {
   VkDevice vk_device = reinterpret_cast<VulkanDevice*>(frame_cleanup_info.device)->vk_device;
 
-  for (uint32_t i = 0; i < RenderInfo::MAX_FRAMES_IN_FLIGHT; i++)
+  for (uint32_t i = 0; i < frame_count; i++)
   {
     VulkanFrame* frame = reinterpret_cast<VulkanFrame*>(frames[i]);
 

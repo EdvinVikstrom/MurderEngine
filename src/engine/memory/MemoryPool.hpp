@@ -1,7 +1,7 @@
 #ifndef ME_MEMORY_POOL_HPP
   #define ME_MEMORY_POOL_HPP
 
-#include "MemoryAlloc.hpp"
+#include <lme/memory.hpp>
 
 namespace me {
 
@@ -10,7 +10,7 @@ namespace me {
   
   protected:
 
-    MemoryAlloc allocator;
+    allocator alloc;
 
   public:
 
@@ -18,30 +18,41 @@ namespace me {
     {
     }
 
-    explicit MemoryPool(MemoryAlloc &allocator)
-      : allocator(allocator)
+    explicit MemoryPool(allocator &alloc)
+      : alloc(alloc)
     {
-    }
-
-    [[nodiscard]] T* begin() const
-    {
-      return (T*) allocator.begin();
-    }
-
-    [[nodiscard]] T* end() const
-    {
-      return (T*) allocator.end();
     }
   
     template<typename... A>
     [[nodiscard]] T* allocate(A&&... args)
     {
-      return new T(static_cast<A&&>(args)...);
+      return alloc.allocate<T>(static_cast<A&&>(args)...);
     }
 
-    void rewind(size_t length)
+    template<typename... A>
+    [[nodiscard]] T* allocate(size_t count, A&&... args)
     {
-      allocator.rewind(length);
+      return alloc.allocate<T>(count, static_cast<A&&>(args)...);
+    }
+
+    [[nodiscard]] T* allocate(T &&value)
+    {
+      return alloc.allocate<T>(static_cast<T&&>(value));
+    }
+
+    [[nodiscard]] T* allocate(size_t count, T &&value)
+    {
+      return alloc.allocate<T>(count, static_cast<T&&>(value));
+    }
+
+    [[nodiscard]] T* reallocate(size_t count, T* ptr)
+    {
+      return alloc.reallocate<T>(count, ptr);
+    }
+
+    void deallocate(T* ptr)
+    {
+      alloc.deallocate(ptr);
     }
   
   };

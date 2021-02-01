@@ -8,7 +8,7 @@
 
 /* class MurderEngine */
 me::MurderEngine::MurderEngine(const EngineInfo &engine_info, const EngineBus &engine_bus)
-  : logger("Engine"), engine_info(engine_info), engine_bus(engine_bus), alloc(4096 * 8)
+  : logger("Engine"), engine_info(engine_info), engine_bus(engine_bus)
 {
 }
 
@@ -24,18 +24,12 @@ int me::MurderEngine::initialize(int argc, char** argv)
   logger.info("running %s engine version [%u.%u.%u]", ME_ENGINE_NAME,
       ME_ENGINE_VERSION_MAJOR, ME_ENGINE_VERSION_MINOR, ME_ENGINE_VERSION_PATCH);
 
-  /* initialize all modules */
-  Semaphore init_semaphore;
-  init_modules(init_semaphore);
-  translate_semaphore(init_semaphore);
+  init_modules();
 
   /* main loop */
   while (running)
   {
-    /* tick all modules */
-    Semaphore tick_semaphore;
-    tick_modules(tick_semaphore);
-    translate_semaphore(tick_semaphore);
+    tick_modules();
   }
   return 0;
 }
@@ -43,23 +37,24 @@ int me::MurderEngine::initialize(int argc, char** argv)
 int me::MurderEngine::terminate()
 {
   running = false;
-  printf("terminating...\n");
+  logger.info("terminating...");
 
-  /* terminate all modules */
-  Semaphore terminate_semaphore;
-  terminate_modules(terminate_semaphore);
-  translate_semaphore(terminate_semaphore);
+  terminate_modules();
 
   abort();
   return 0;
 }
 
-int me::MurderEngine::translate_semaphore(const Semaphore &semaphore)
+int me::MurderEngine::translate_semaphore(const Semaphore &semaphore, const string_view &module)
 {
+  char module_str[module.size() + 1];
+  module.c_str(module_str);
+
   /* terminate */
   if (semaphore.flags & MODULE_SEMAPHORE_TERMINATE_FLAG)
   {
-    logger.debug("received '%s' flag", module_semaphore_flag_name(MODULE_SEMAPHORE_TERMINATE_FLAG));
+    logger.debug("received '%s' flag from module [%s]",
+	module_semaphore_flag_name(MODULE_SEMAPHORE_TERMINATE_FLAG), module_str);
     if (running)
       terminate();
   }
@@ -72,12 +67,14 @@ int me::MurderEngine::translate_semaphore(const Semaphore &semaphore)
   return 0;
 }
 
-int me::MurderEngine::init_modules(Semaphore &semaphore)
+int me::MurderEngine::init_modules()
 {
   for (Module* module : engine_bus)
   {
     try {
+      Semaphore semaphore;
       module->initialize({&semaphore, &engine_bus, &engine_info});
+      translate_semaphore(semaphore, module->get_name());
       logger.debug("loaded module %s '%s'", module_type_name(module->get_type()), module->get_name().c_str());
     }catch(const exception &e)
     {
@@ -88,7 +85,7 @@ int me::MurderEngine::init_modules(Semaphore &semaphore)
   return 0;
 }
 
-int me::MurderEngine::tick_modules(Semaphore &semaphore)
+int me::MurderEngine::tick_modules()
 {
   for (Module* module : engine_bus)
   {
@@ -96,7 +93,9 @@ int me::MurderEngine::tick_modules(Semaphore &semaphore)
       continue;
 
     try {
+      Semaphore semaphore;
       module->tick({&semaphore, &engine_bus, &engine_info});
+      translate_semaphore(semaphore, module->get_name());
     }catch(const exception &e)
     {
       logger.err("received an error from module '%s'\n\t%s", module->get_name().c_str(), e.get_message());
@@ -106,12 +105,14 @@ int me::MurderEngine::tick_modules(Semaphore &semaphore)
   return 0;
 }
 
-int me::MurderEngine::terminate_modules(Semaphore &semaphore)
+int me::MurderEngine::terminate_modules()
 {
   for (Module* module : engine_bus)
   {
     try {
+      Semaphore semaphore;
       module->terminate({&semaphore, &engine_bus, &engine_info});
+      translate_semaphore(semaphore, module->get_name());
     }catch(const exception &e)
     {
       logger.err("failed to terminate module '%s'\n\t%s", module->get_name().c_str(), e.get_message());

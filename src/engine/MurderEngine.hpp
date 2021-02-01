@@ -3,8 +3,6 @@
 
 #include "EngineInfo.hpp"
 
-#include "memory/MemoryAlloc.hpp"
-
 #include "Logger.hpp"
 #include "Module.hpp"
 
@@ -26,7 +24,7 @@ namespace me {
     const EngineInfo engine_info;
     const EngineBus engine_bus;
 
-    MemoryAlloc alloc;
+    allocator alloc;
 
   public:
 
@@ -37,11 +35,11 @@ namespace me {
 
   protected:
 
-    int translate_semaphore(const Semaphore &semaphore);
+    int translate_semaphore(const Semaphore &semaphore, const string_view &module);
 
-    int init_modules(Semaphore &semaphore);
-    int tick_modules(Semaphore &semaphore);
-    int terminate_modules(Semaphore &semaphore);
+    int init_modules();
+    int tick_modules();
+    int terminate_modules();
 
   };
 

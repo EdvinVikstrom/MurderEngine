@@ -1,5 +1,0 @@
-build/
-*.o
-*.d
-libme.a
-copy.sh

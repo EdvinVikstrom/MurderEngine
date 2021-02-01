@@ -208,15 +208,15 @@ int me::Vulkan::create_descriptors(const DescriptorCreateInfo &descriptor_create
     throw exception("in 'create_descriptors()' DescriptorCreateInfo::buffer_count must be the same as 'descriptor_count'. %u != \e[33m%u\e[0m",	
 	descriptor_create_info.buffer_count, descriptor_count);
 
-  uint32_t descriptor_set_layout_count = 1;
-  VkDescriptorSetLayout vk_descriptor_set_layouts[descriptor_set_layout_count];
-  vk_descriptor_set_layouts[0] = pipeline->vk_descriptor_set_layout;
+  VkDescriptorSetLayout vk_descriptor_set_layouts[descriptor_count];
+  for (uint32_t i = 0; i < descriptor_count; i++)
+    vk_descriptor_set_layouts[i] = pipeline->vk_descriptor_set_layout;
 
   VkDescriptorSetAllocateInfo vk_descriptor_set_allocate_info = { };
   vk_descriptor_set_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   vk_descriptor_set_allocate_info.pNext = nullptr;
   vk_descriptor_set_allocate_info.descriptorPool = descriptor_pool->vk_descriptor_pool;
-  vk_descriptor_set_allocate_info.descriptorSetCount = descriptor_set_layout_count;
+  vk_descriptor_set_allocate_info.descriptorSetCount = descriptor_count;
   vk_descriptor_set_allocate_info.pSetLayouts = vk_descriptor_set_layouts;
 
   VkDescriptorSet vk_descriptor_sets[descriptor_count];
@@ -226,7 +226,7 @@ int me::Vulkan::create_descriptors(const DescriptorCreateInfo &descriptor_create
 
   for (uint32_t i = 0; i < descriptor_count; i++)
   {
-    VulkanBuffer* buffer = reinterpret_cast<VulkanBuffer*>(&descriptor_create_info.buffers[i]);
+    VulkanBuffer* buffer = reinterpret_cast<VulkanBuffer*>(descriptor_create_info.buffers[i]);
 
     VkDescriptorBufferInfo vk_descriptor_buffer_info = { };
     vk_descriptor_buffer_info.buffer = buffer->vk_buffer;

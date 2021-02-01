@@ -11,10 +11,10 @@ LIBS = -lme \
 	-lglfw3
 INCS = --include=lme/type.hpp
 LPATHS = -L./extern/libme -L./extern/glfw/src
-IPATHS = -I./extern/libme/include -I./extern/glfw/include -I./extern/portaudio/include
+IPATHS = -I./extern/libme/include -I./extern/glfw/include -I./extern/portaudio/include -I./extern/rapidxml/include
 DEFS = -DME_USE_VULKAN
 
-PKG_CONFIG_PATH = ./extern/libme:./extern/glfw/src:./extern/libme/include:./extern/glfw/include:./extern/portaudio/include:
+PKG_CONFIG_PATH = ./extern/libme:./extern/glfw/src:./extern/libme/include:./extern/glfw/include:./extern/portaudio/include:./extern/rapidxml/include:
 CPKG = $$(env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --cflags glfw3)
 LPKG = $$(env PKG_CONFIG_PATH=$(PKG_CONFIG_PATH) pkg-config --static --libs glfw3)
 
@@ -45,10 +45,8 @@ SOURCES = ./src/engine/MurderEngine.cpp \
 	./src/engine/renderer/vulkan/Swapchain.cpp \
 	./src/engine/renderer/vulkan/Util.cpp \
 	./src/engine/surface/window/WindowSurface.cpp \
-	./src/engine/memory/MemoryAlloc.cpp \
 	./src/engine/scene/Scene.cpp \
 	./src/engine/audio/portaudio/PortAudio.cpp \
-	./src/engine/format/shader/shader_format.cpp \
 	./src/game/Main.cpp \
 	./src/game/Game.cpp \
 	./src/game/SceneRenderer.cpp

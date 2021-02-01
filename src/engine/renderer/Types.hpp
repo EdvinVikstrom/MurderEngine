@@ -1,7 +1,6 @@
 #ifndef ME_RENDERER_TYPES_HPP
   #define ME_RENDERER_TYPES_HPP
 
-#include "../scene/Mesh.hpp"
 #include "../surface/Surface.hpp"
 #include "../EngineInfo.hpp"
 #include "Shader.hpp"
@@ -136,9 +135,9 @@ namespace me {
   typedef void* CommandPool;
   typedef void* CommandBuffer;
 
-  typedef void* FramePrepared;
-  typedef void* FrameRendered;
-  typedef void* FramePresented;
+  typedef uint32_t FramePrepared;
+  typedef uint32_t FrameRendered;
+  typedef uint32_t FramePresented;
  
 
   struct ViewportInfo {
@@ -167,6 +166,7 @@ namespace me {
   
   struct EngineInitInfo {
     const EngineInfo* engine_info;
+    allocator alloc;
     uint32_t extension_count;
     const char** extensions;
     bool debug;
@@ -341,10 +341,11 @@ namespace me {
   struct FrameRenderInfo {
     Device device;
     Queue queue;
+    FramePrepared prepared;
     SwapchainImage image;
     Frame frame;
-    uint32_t frame_index;
     uint32_t image_index;
+    uint32_t frame_index;
     uint32_t command_buffer_count;
     CommandBuffer* command_buffers;
   };
@@ -352,9 +353,11 @@ namespace me {
   struct FramePresentInfo {
     Device device;
     Queue queue;
-    SwapchainImage image;
     FrameRendered rendered;
+    SwapchainImage image;
+    Frame frame;
     uint32_t image_index;
+    uint32_t frame_index;
     uint32_t swapchain_count;
     Swapchain* swapchains;
   };
@@ -433,7 +436,14 @@ namespace me {
   struct CmdDrawMeshesInfo {
     Pipeline pipeline;
     uint32_t mesh_count;
-    Mesh** meshes;
+    class Mesh** meshes;
+  };
+
+  struct SetupMeshInfo {
+    PhysicalDevice physical_device;
+    Device device;
+    Queue transfer_queue;
+    CommandPool transfer_pool;
   };
 
 

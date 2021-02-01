@@ -25,7 +25,7 @@ me::Logger::Logger(const char* prefix, const uint8_t flags, const Logger* parent
   va_list args; \
   va_start(args, format); \
   fprintf(f, p); \
-  fprintf(f, "[%s] ", prefix); \
+  fprintf(f, "\e[0m[%s] ", prefix); \
   vfprintf(f, format, args); \
   fprintf(f, "\e[0m\n"); \
   va_end(args); \
@@ -78,7 +78,7 @@ uint8_t me::Logger::q_choose(const array_proxy<const char*> &options, uint8_t de
   }
 
   do {
-    printf("pick a option (default: %u): ", default_opt);
+    printf(":: pick a option (default: %u): ", default_opt);
 
     char input[4];
     fgets(input, 4, stdin);

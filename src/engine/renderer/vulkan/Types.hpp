@@ -26,8 +26,8 @@ namespace me {
     VkDevice vk_device;
     uint32_t compute_queue_index;
     uint32_t graphics_queue_index;
-    uint32_t transfer_queue_index;
     uint32_t present_queue_index;
+    uint32_t transfer_queue_index;
   };
 
   struct VulkanQueue {
@@ -92,20 +92,6 @@ namespace me {
   struct VulkanCommandBuffer {
     VkCommandBuffer vk_command_buffer;
     CommandBufferUsage usage;
-  };
-
-  struct VulkanFramePrepared {
-    uint32_t image_index;
-    uint8_t flags;
-  };
-
-  struct VulkanFrameRendered {
-    VkSemaphore signal_semaphore;
-    uint8_t flags;
-  };
-
-  struct VulkanFramePresented {
-    uint8_t flags;
   };
 
 }
