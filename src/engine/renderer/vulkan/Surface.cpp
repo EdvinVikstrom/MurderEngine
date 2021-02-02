@@ -7,7 +7,7 @@
 static int get_format(
     const VkFormat 						color_format,
     const VkColorSpaceKHR 					color_space,
-    const me::array_proxy<VkSurfaceFormatKHR, uint32_t> 	&surface_formats,
+    const me::array_proxy<VkSurfaceFormatKHR> 			&surface_formats,
     VkSurfaceFormatKHR 						&surface_format
     );
 
@@ -21,7 +21,7 @@ int me::Vulkan::create_surface(const SurfaceCreateInfo &surface_create_info, Sur
 {
   VERIFY_CREATE_INFO(surface_create_info, STRUCTURE_TYPE_SURFACE_CREATE_INFO);
 
-  VkPhysicalDevice vk_physical_device = reinterpret_cast<VulkanPhysicalDevice*>(surface_create_info.physical_device)->vk_physical_device;
+  VkPhysicalDevice vk_physical_device = reinterpret_cast<PhysicalDevice_T*>(surface_create_info.physical_device)->vk_physical_device;
 
   VkSurfaceKHR vk_surface;
   surface_create_info.surface_module->vk_create_surface(vk_instance, vk_allocation, &vk_surface);
@@ -55,15 +55,15 @@ int me::Vulkan::create_surface(const SurfaceCreateInfo &surface_create_info, Sur
   VkSurfaceFormatKHR vk_surface_format;
   get_format(VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR, {surface_format_count, surface_formats}, vk_surface_format);
 
-  surface = alloc.allocate<VulkanSurface>(vk_surface, vk_surface_capabilities, vk_surface_format, vk_present_mode, vk_extent);
+  surface = alloc.allocate<Surface_T>(vk_surface, vk_surface_capabilities, vk_surface_format, vk_present_mode, vk_extent);
   return 0;
 }
 
-int me::Vulkan::cleanup_surface(const SurfaceCleanupInfo &surface_cleanup_info, Surface surface)
+int me::Vulkan::cleanup_surface(Surface surface)
 {
-  VulkanSurface* vulkan_surface = reinterpret_cast<VulkanSurface*>(surface);
+  VkSurfaceKHR vk_surface = reinterpret_cast<Surface_T*>(surface)->vk_surface;
 
-  vkDestroySurfaceKHR(vk_instance, vulkan_surface->vk_surface, vk_allocation);
+  vkDestroySurfaceKHR(vk_instance, vk_surface, vk_allocation);
   return 0;
 }
 
@@ -71,7 +71,7 @@ int me::Vulkan::cleanup_surface(const SurfaceCleanupInfo &surface_cleanup_info, 
 int get_format(
     const VkFormat 						color_format,
     const VkColorSpaceKHR 					color_space,
-    const me::array_proxy<VkSurfaceFormatKHR, uint32_t> 	&surface_formats,
+    const me::array_proxy<VkSurfaceFormatKHR> 			&surface_formats,
     VkSurfaceFormatKHR 						&surface_format
     )
 {

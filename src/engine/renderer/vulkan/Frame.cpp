@@ -5,7 +5,7 @@ int me::Vulkan::create_frames(const FrameCreateInfo &frame_create_info, uint32_t
 {
   VERIFY_CREATE_INFO(frame_create_info, STRUCTURE_TYPE_FRAME_CREATE_INFO);
 
-  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(frame_create_info.device)->vk_device;
+  VkDevice vk_device = reinterpret_cast<Device_T*>(frame_create_info.device)->vk_device;
 
   VkSemaphoreCreateInfo semaphore_create_info = { };
   semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -37,22 +37,24 @@ int me::Vulkan::create_frames(const FrameCreateInfo &frame_create_info, uint32_t
     if (result != VK_SUCCESS)
       throw exception("failed to create fence [%s]", util::get_result_string(result));
 
-    frames[i] = alloc.allocate<VulkanFrame>(vk_image_available_semaphore, vk_render_finished_semaphore, vk_in_flight_fence);
+    frames[i] = alloc.allocate<Frame_T>(vk_image_available_semaphore, vk_render_finished_semaphore, vk_in_flight_fence);
   }
   return 0;
 }
 
-int me::Vulkan::cleanup_frames(const FrameCleanupInfo &frame_cleanup_info, uint32_t frame_count, Frame* frames)
+int me::Vulkan::cleanup_frames(Device device, uint32_t frame_count, Frame* frames)
 {
-  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(frame_cleanup_info.device)->vk_device;
+  VkDevice vk_device = reinterpret_cast<Device_T*>(device)->vk_device;
 
   for (uint32_t i = 0; i < frame_count; i++)
   {
-    VulkanFrame* frame = reinterpret_cast<VulkanFrame*>(frames[i]);
+    VkSemaphore vk_image_available_semaphore = reinterpret_cast<Frame_T*>(frames[i])->vk_image_available_semaphore;
+    VkSemaphore vk_render_finished_semaphore = reinterpret_cast<Frame_T*>(frames[i])->vk_render_finished_semaphore;
+    VkFence vk_in_flight_fence = reinterpret_cast<Frame_T*>(frames[i])->vk_in_flight_fence;
 
-    vkDestroySemaphore(vk_device, frame->vk_image_available_semaphore, vk_allocation);
-    vkDestroySemaphore(vk_device, frame->vk_render_finished_semaphore, vk_allocation);
-    vkDestroyFence(vk_device, frame->vk_in_flight_fence, vk_allocation);
+    vkDestroySemaphore(vk_device, vk_image_available_semaphore, vk_allocation);
+    vkDestroySemaphore(vk_device, vk_render_finished_semaphore, vk_allocation);
+    vkDestroyFence(vk_device, vk_in_flight_fence, vk_allocation);
   }
   return 0;
 }

@@ -31,7 +31,17 @@ int me::Vulkan::enumerate_physical_devices(uint32_t &physical_device_count, Phys
   vkEnumeratePhysicalDevices(vk_instance, &physical_device_count, vk_physical_devices);
 
   for (uint32_t i = 0; i < physical_device_count; i++)
-    physical_devices[i] = alloc.allocate<VulkanPhysicalDevice>(vk_physical_devices[i]);
+  {
+    VkPhysicalDevice vk_physical_device = vk_physical_devices[i];
+
+    VkPhysicalDeviceProperties vk_physical_device_properties;
+    vkGetPhysicalDeviceProperties(vk_physical_device, &vk_physical_device_properties);
+
+    VkPhysicalDeviceFeatures vk_physical_device_features;
+    vkGetPhysicalDeviceFeatures(vk_physical_device, &vk_physical_device_features);
+
+    physical_devices[i] = alloc.allocate<PhysicalDevice_T>(vk_physical_device, vk_physical_device_properties, vk_physical_device_features);
+  }
   return 0;
 }
 
@@ -39,8 +49,9 @@ int me::Vulkan::create_device(const DeviceCreateInfo &device_create_info, Device
 {
   VERIFY_CREATE_INFO(device_create_info, STRUCTURE_TYPE_DEVICE_CREATE_INFO);
 
-  VulkanSurface* surface = reinterpret_cast<VulkanSurface*>(device_create_info.surface);
-  VkPhysicalDevice vk_physical_device = reinterpret_cast<VulkanPhysicalDevice*>(device_create_info.physical_devices[0])->vk_physical_device;
+  Surface_T* surface = reinterpret_cast<Surface_T*>(device_create_info.surface);
+  VkPhysicalDevice vk_physical_device = reinterpret_cast<PhysicalDevice_T*>(device_create_info.physical_devices[0])->vk_physical_device;
+  VkPhysicalDeviceFeatures vk_physical_device_features = reinterpret_cast<PhysicalDevice_T*>(device_create_info.physical_devices[0])->vk_features;
 
   uint32_t queue_family_count;
   vkGetPhysicalDeviceQueueFamilyProperties(vk_physical_device, &queue_family_count, nullptr);
@@ -102,24 +113,39 @@ int me::Vulkan::create_device(const DeviceCreateInfo &device_create_info, Device
   vk_device_create_info.ppEnabledLayerNames = required_device_layers.data();
   vk_device_create_info.enabledExtensionCount = required_device_extensions.size();
   vk_device_create_info.ppEnabledExtensionNames = required_device_extensions.data();
-  vk_device_create_info.pEnabledFeatures = nullptr;
+  vk_device_create_info.pEnabledFeatures = &vk_physical_device_features;
 
   VkDevice vk_device;
   VkResult result = vkCreateDevice(vk_physical_device, &vk_device_create_info, vk_allocation, &vk_device);
   if (result != VK_SUCCESS)
     throw exception("failed to create device [%s]", util::get_result_string(result));
 
-  device = alloc.allocate<VulkanDevice>(vk_device, compute_queue_index, graphics_queue_index, present_queue_index, transfer_queue_index);
+  device = alloc.allocate<Device_T>(vk_device, compute_queue_index, graphics_queue_index, present_queue_index, transfer_queue_index);
   return 0;
 }
 
-int me::Vulkan::cleanup_device(const DeviceCleanupInfo &device_cleanup_info, Device device)
+int me::Vulkan::cleanup_device(Device device)
 {
-  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(device)->vk_device;
+  VkDevice vk_device = reinterpret_cast<Device_T*>(device)->vk_device;
 
   vkDestroyDevice(vk_device, vk_allocation);
   return 0;
 }
+
+int me::Vulkan::get_physical_device_properties(PhysicalDevice physical_device, PhysicalDeviceProperties &physical_device_properties)
+{
+  VkPhysicalDeviceProperties vk_physical_device_properties = reinterpret_cast<PhysicalDevice_T*>(physical_device)->vk_properties;
+
+  physical_device_properties.device_type = util::get_physical_device_type(vk_physical_device_properties.deviceType);
+  physical_device_properties.device_id = vk_physical_device_properties.deviceID;
+  memcpy(physical_device_properties.device_name, vk_physical_device_properties.deviceName, 256);
+  physical_device_properties.vendor_id = vk_physical_device_properties.vendorID;
+  physical_device_properties.driver_version = vk_physical_device_properties.driverVersion;
+  physical_device_properties.api_version = vk_physical_device_properties.apiVersion;
+  return 0;
+}
+
+
 
 
 /*

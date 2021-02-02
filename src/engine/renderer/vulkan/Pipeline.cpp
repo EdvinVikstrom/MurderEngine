@@ -3,8 +3,8 @@
 #include "Memory.hpp"
 
 static int create_vertex_input(
-    const me::array_proxy<me::ShaderBindingInfo, uint32_t> 		&binding_infos,
-    const me::array_proxy<me::ShaderAttributeInfo, uint32_t> 		&attribute_infos,
+    const me::array_proxy<me::ShaderBinding> 				&binding_infos,
+    const me::array_proxy<me::ShaderAttribute> 				&attribute_infos,
     VkVertexInputBindingDescription* 					vertex_input_binding_descriptions,
     VkVertexInputAttributeDescription* 					vertex_input_attribute_descriptions,
     VkPipelineVertexInputStateCreateInfo 				&pipeline_vertex_input_state_create_info
@@ -18,20 +18,20 @@ static int create_input_assembly(
 static int create_descriptor_set_layout(
     VkDevice 								device,
     VkAllocationCallbacks* 						allocation,
-    const me::array_proxy<VkDescriptorSetLayoutBinding, uint32_t> 	&bindings,
+    const me::array_proxy<VkDescriptorSetLayoutBinding> 		&bindings,
     VkDescriptorSetLayout 						&descriptor_set_layout
     );
 
 static int create_pipeline_layout(
     VkDevice 								device,
     VkAllocationCallbacks*						allocation,
-    const me::array_proxy<VkDescriptorSetLayout, uint32_t>		&descriptor_set_layouts,
+    const me::array_proxy<VkDescriptorSetLayout>			&descriptor_set_layouts,
     VkPipelineLayout 							&pipeline_layout
     );
 
 static int create_viewports(
-    const me::array_proxy<me::ViewportInfo, uint32_t>			&viewport_infos,
-    const me::array_proxy<me::ScissorInfo, uint32_t>			&scissor_infos,
+    const me::array_proxy<me::Viewport>					&viewport_infos,
+    const me::array_proxy<me::Scissor>					&scissor_infos,
     VkViewport*								viewports,
     VkRect2D*								scissors,
     VkPipelineViewportStateCreateInfo 					&pipeline_viewport_state_create_info
@@ -65,8 +65,8 @@ int me::Vulkan::create_pipeline(const PipelineCreateInfo &pipeline_create_info, 
 {
   VERIFY_CREATE_INFO(pipeline_create_info, STRUCTURE_TYPE_PIPELINE_CREATE_INFO);
 
-  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(pipeline_create_info.device)->vk_device;
-  VulkanRenderPass* render_pass = reinterpret_cast<VulkanRenderPass*>(pipeline_create_info.render_pass);
+  VkDevice vk_device = reinterpret_cast<Device_T*>(pipeline_create_info.device)->vk_device;
+  VkRenderPass vk_render_pass = reinterpret_cast<RenderPass_T*>(pipeline_create_info.render_pass)->vk_render_pass;
 
   ShaderCreateInfo &shader_create_info = *pipeline_create_info.shader_create_info;
   RasterizerCreateInfo &rasterizer_create_info = *pipeline_create_info.rasterizer_create_info;
@@ -150,7 +150,7 @@ int me::Vulkan::create_pipeline(const PipelineCreateInfo &pipeline_create_info, 
   graphics_pipeline_create_info.pColorBlendState = &pipeline_color_blend_state_create_info;
   graphics_pipeline_create_info.pDynamicState = nullptr;
   graphics_pipeline_create_info.layout = vk_layout;
-  graphics_pipeline_create_info.renderPass = render_pass->vk_render_pass;
+  graphics_pipeline_create_info.renderPass = vk_render_pass;
   graphics_pipeline_create_info.subpass = 0;
   graphics_pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
   graphics_pipeline_create_info.basePipelineIndex = -1;
@@ -163,7 +163,7 @@ int me::Vulkan::create_pipeline(const PipelineCreateInfo &pipeline_create_info, 
   for (uint32_t i = 0; i < shader_create_info.shader_count; i++)
     vkDestroyShaderModule(vk_device, shader_modules[i], vk_allocation);
 
-  pipeline = alloc.allocate<VulkanPipeline>(vk_pipeline, vk_layout, vk_descriptor_set_layout);
+  pipeline = alloc.allocate<Pipeline_T>(vk_pipeline, vk_layout, vk_descriptor_set_layout);
   return 0;
 }
 
@@ -196,13 +196,14 @@ int me::Vulkan::create_descriptors(const DescriptorCreateInfo &descriptor_create
 {
   VERIFY_CREATE_INFO(descriptor_create_info, STRUCTURE_TYPE_DESCRIPTOR_CREATE_INFO);
 
-  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(descriptor_create_info.device)->vk_device;
-  VulkanDescriptorPool* descriptor_pool = reinterpret_cast<VulkanDescriptorPool*>(descriptor_create_info.descriptor_pool);
-  VulkanPipeline* pipeline = reinterpret_cast<VulkanPipeline*>(descriptor_create_info.pipeline);
+  VkDevice vk_device = reinterpret_cast<Device_T*>(descriptor_create_info.device)->vk_device;
+  VkDescriptorPool vk_descriptor_pool = reinterpret_cast<DescriptorPool_T*>(descriptor_create_info.descriptor_pool)->vk_descriptor_pool;
+  DescriptorType descriptor_pool_type = reinterpret_cast<DescriptorPool_T*>(descriptor_create_info.descriptor_pool)->type;
+  VkDescriptorSetLayout vk_descriptor_set_layout = reinterpret_cast<Pipeline_T*>(descriptor_create_info.pipeline)->vk_descriptor_set_layout;
 
-  if (descriptor_create_info.descriptor_type != descriptor_pool->type)
+  if (descriptor_create_info.descriptor_type != descriptor_pool_type)
     throw exception("in 'create_descriptors()' DescriptorCreateInfo::descriptor_type must be the same as DescriptorPool::descriptor_type. %s != \e[33m%s\e[0m",
-	descriptor_type_name(descriptor_create_info.descriptor_type), descriptor_type_name(descriptor_pool->type));
+	descriptor_type_name(descriptor_create_info.descriptor_type), descriptor_type_name(descriptor_pool_type));
 
   if (descriptor_create_info.buffer_count != descriptor_count)
     throw exception("in 'create_descriptors()' DescriptorCreateInfo::buffer_count must be the same as 'descriptor_count'. %u != \e[33m%u\e[0m",	
@@ -210,12 +211,12 @@ int me::Vulkan::create_descriptors(const DescriptorCreateInfo &descriptor_create
 
   VkDescriptorSetLayout vk_descriptor_set_layouts[descriptor_count];
   for (uint32_t i = 0; i < descriptor_count; i++)
-    vk_descriptor_set_layouts[i] = pipeline->vk_descriptor_set_layout;
+    vk_descriptor_set_layouts[i] = vk_descriptor_set_layout;
 
   VkDescriptorSetAllocateInfo vk_descriptor_set_allocate_info = { };
   vk_descriptor_set_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   vk_descriptor_set_allocate_info.pNext = nullptr;
-  vk_descriptor_set_allocate_info.descriptorPool = descriptor_pool->vk_descriptor_pool;
+  vk_descriptor_set_allocate_info.descriptorPool = vk_descriptor_pool;
   vk_descriptor_set_allocate_info.descriptorSetCount = descriptor_count;
   vk_descriptor_set_allocate_info.pSetLayouts = vk_descriptor_set_layouts;
 
@@ -226,10 +227,10 @@ int me::Vulkan::create_descriptors(const DescriptorCreateInfo &descriptor_create
 
   for (uint32_t i = 0; i < descriptor_count; i++)
   {
-    VulkanBuffer* buffer = reinterpret_cast<VulkanBuffer*>(descriptor_create_info.buffers[i]);
+    VkBuffer vk_buffer = reinterpret_cast<Buffer_T*>(descriptor_create_info.buffers[i])->vk_buffer;
 
     VkDescriptorBufferInfo vk_descriptor_buffer_info = { };
-    vk_descriptor_buffer_info.buffer = buffer->vk_buffer;
+    vk_descriptor_buffer_info.buffer = vk_buffer;
     vk_descriptor_buffer_info.offset = descriptor_create_info.offset;
     vk_descriptor_buffer_info.range = descriptor_create_info.range;
 
@@ -247,42 +248,44 @@ int me::Vulkan::create_descriptors(const DescriptorCreateInfo &descriptor_create
 
     vkUpdateDescriptorSets(vk_device, 1, &vk_write_descriptor_set, 0, nullptr);
 
-    descriptors[i] = alloc.allocate<VulkanDescriptor>(vk_descriptor_sets[i]);
+    descriptors[i] = alloc.allocate<Descriptor_T>(vk_descriptor_sets[i]);
   }
   return 0;
 }
 
-int me::Vulkan::cleanup_pipeline(const PipelineCleanupInfo &pipeline_cleanup_info, Pipeline pipeline_ptr)
+int me::Vulkan::cleanup_pipeline(Device device, Pipeline pipeline)
 {
-  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(pipeline_cleanup_info.device)->vk_device;
-  VulkanPipeline* pipeline = reinterpret_cast<VulkanPipeline*>(pipeline_ptr);
+  VkDevice vk_device = reinterpret_cast<Device_T*>(device)->vk_device;
+  VkDescriptorSetLayout vk_descriptor_set_layout = reinterpret_cast<Pipeline_T*>(pipeline)->vk_descriptor_set_layout;
+  VkPipelineLayout vk_pipeline_layout = reinterpret_cast<Pipeline_T*>(pipeline)->vk_layout;
+  VkPipeline vk_pipeline = reinterpret_cast<Pipeline_T*>(pipeline)->vk_pipeline;
 
-  vkDestroyDescriptorSetLayout(vk_device, pipeline->vk_descriptor_set_layout, vk_allocation);
-  vkDestroyPipelineLayout(vk_device, pipeline->vk_layout, vk_allocation);
-  vkDestroyPipeline(vk_device, pipeline->vk_pipeline, vk_allocation);
+  vkDestroyDescriptorSetLayout(vk_device, vk_descriptor_set_layout, vk_allocation);
+  vkDestroyPipelineLayout(vk_device, vk_pipeline_layout, vk_allocation);
+  vkDestroyPipeline(vk_device, vk_pipeline, vk_allocation);
   return 0;
 }
 
-int me::Vulkan::cleanup_descriptors(const DescriptorCleanupInfo &descriptor_cleanup_info, uint32_t descriptor_count, Descriptor* descriptors)
+int me::Vulkan::cleanup_descriptors(Device device, DescriptorPool descriptor_pool, uint32_t descriptor_count, Descriptor* descriptors)
 {
-  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(descriptor_cleanup_info.device)->vk_device;
-  VulkanDescriptorPool* descriptor_pool = reinterpret_cast<VulkanDescriptorPool*>(descriptor_cleanup_info.descriptor_pool);
+  VkDevice vk_device = reinterpret_cast<Device_T*>(device)->vk_device;
+  VkDescriptorPool vk_descriptor_pool = reinterpret_cast<DescriptorPool_T*>(descriptor_pool)->vk_descriptor_pool;
 
   VkDescriptorSet vk_descriptor_sets[descriptor_count];
   for (uint32_t i = 0; i < descriptor_count; i++)
   {
-    VulkanDescriptor* descriptor = reinterpret_cast<VulkanDescriptor*>(descriptors[i]);
-    vk_descriptor_sets[i] = descriptor->vk_descriptor_set;
+    VkDescriptorSet vk_descriptor_set = reinterpret_cast<Descriptor_T*>(descriptors[i])->vk_descriptor_set;
+    vk_descriptor_sets[i] = vk_descriptor_set;
   }
 
-  vkFreeDescriptorSets(vk_device, descriptor_pool->vk_descriptor_pool, descriptor_count, vk_descriptor_sets);
+  vkFreeDescriptorSets(vk_device, vk_descriptor_pool, descriptor_count, vk_descriptor_sets);
   return 0;
 }
 
 
 int create_vertex_input(
-    const me::array_proxy<me::ShaderBindingInfo, uint32_t> 		&binding_infos,
-    const me::array_proxy<me::ShaderAttributeInfo, uint32_t> 		&attribute_infos,
+    const me::array_proxy<me::ShaderBinding> 			&binding_infos,
+    const me::array_proxy<me::ShaderAttribute> 		&attribute_infos,
     VkVertexInputBindingDescription* 					vertex_input_binding_descriptions,
     VkVertexInputAttributeDescription* 					vertex_input_attribute_descriptions,
     VkPipelineVertexInputStateCreateInfo 				&pipeline_vertex_input_state_create_info
@@ -290,7 +293,7 @@ int create_vertex_input(
 {
   for (uint32_t i = 0; i < binding_infos.size(); i++)
   {
-    const me::ShaderBindingInfo &binding_info = binding_infos[i];
+    const me::ShaderBinding &binding_info = binding_infos[i];
     vertex_input_binding_descriptions[i].binding = binding_info.binding;
     vertex_input_binding_descriptions[i].stride = binding_info.stride;
     vertex_input_binding_descriptions[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -298,7 +301,7 @@ int create_vertex_input(
 
   for (uint32_t i = 0; i < attribute_infos.size(); i++)
   {
-    const me::ShaderAttributeInfo &attribute_info = attribute_infos[i];
+    const me::ShaderAttribute &attribute_info = attribute_infos[i];
     VkFormat format = me::util::get_vulkan_format(attribute_info.format);
 
     vertex_input_attribute_descriptions[i].binding = attribute_info.binding;
@@ -337,7 +340,7 @@ int create_input_assembly(
 int create_descriptor_set_layout(
     VkDevice 								device,
     VkAllocationCallbacks* 						allocation,
-    const me::array_proxy<VkDescriptorSetLayoutBinding, uint32_t> 	&bindings,
+    const me::array_proxy<VkDescriptorSetLayoutBinding> 	&bindings,
     VkDescriptorSetLayout 						&descriptor_set_layout
     )
 {
@@ -356,7 +359,7 @@ int create_descriptor_set_layout(
 int create_pipeline_layout(
     VkDevice 								device,
     VkAllocationCallbacks* 						allocation,
-    const me::array_proxy<VkDescriptorSetLayout, uint32_t>		&descriptor_set_layouts,
+    const me::array_proxy<VkDescriptorSetLayout>			&descriptor_set_layouts,
     VkPipelineLayout 							&pipeline_layout
     )
 {
@@ -376,8 +379,8 @@ int create_pipeline_layout(
 }
 
 int create_viewports(
-    const me::array_proxy<me::ViewportInfo, uint32_t>			&viewport_infos,
-    const me::array_proxy<me::ScissorInfo, uint32_t>			&scissor_infos,
+    const me::array_proxy<me::Viewport>					&viewport_infos,
+    const me::array_proxy<me::Scissor>					&scissor_infos,
     VkViewport*								viewports,
     VkRect2D*								scissors,
     VkPipelineViewportStateCreateInfo 					&pipeline_viewport_state_create_info
@@ -385,7 +388,7 @@ int create_viewports(
 {
   for (uint32_t i = 0; i < viewport_infos.size(); i++)
   {
-    const me::ViewportInfo &viewport_info = viewport_infos[i];
+    const me::Viewport &viewport_info = viewport_infos[i];
     viewports[i] = {
         .x = viewport_info.location[0],
         .y = viewport_info.location[1],
@@ -395,7 +398,7 @@ int create_viewports(
 	.maxDepth = 1.0F
     };
 
-    const me::ScissorInfo &scissor_info = scissor_infos[i];
+    const me::Scissor &scissor_info = scissor_infos[i];
     scissors[i] = {
         .offset = {scissor_info.offset[0], scissor_info.offset[1]},
         .extent = {scissor_info.size[0], scissor_info.size[1]}
@@ -528,19 +531,19 @@ int create_shader_module(
   shader_create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   shader_create_info.pNext = nullptr;
   shader_create_info.flags = 0;
-  shader_create_info.codeSize = shader->get_length();
-  shader_create_info.pCode = reinterpret_cast<const uint32_t*>(shader->get_data());
+  shader_create_info.codeSize = shader->data.size;
+  shader_create_info.pCode = reinterpret_cast<const uint32_t*>(shader->data.code);
 
   VkResult result = vkCreateShaderModule(device, &shader_create_info, allocation, &shader_module);
   if (result != VK_SUCCESS)
     throw me::exception("failed to create shader module [%s]", me::util::get_result_string(result));
 
   VkShaderStageFlagBits shader_stage_flag_bits;
-  switch (shader->get_type())
+  switch (shader->type)
   {
-    case me::SHADER_VERTEX: shader_stage_flag_bits = VK_SHADER_STAGE_VERTEX_BIT; break;
-    case me::SHADER_FRAGMENT: shader_stage_flag_bits = VK_SHADER_STAGE_FRAGMENT_BIT; break;
-    case me::SHADER_GEOMETRY: shader_stage_flag_bits = VK_SHADER_STAGE_GEOMETRY_BIT; break;
+    case me::SHADER_TYPE_VERTEX: shader_stage_flag_bits = VK_SHADER_STAGE_VERTEX_BIT; break;
+    case me::SHADER_TYPE_FRAGMENT: shader_stage_flag_bits = VK_SHADER_STAGE_FRAGMENT_BIT; break;
+    case me::SHADER_TYPE_GEOMETRY: shader_stage_flag_bits = VK_SHADER_STAGE_GEOMETRY_BIT; break;
   }
 
   pipeline_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -548,7 +551,7 @@ int create_shader_module(
   pipeline_shader_stage_create_info.flags = 0;
   pipeline_shader_stage_create_info.stage = shader_stage_flag_bits;
   pipeline_shader_stage_create_info.module = shader_module;
-  pipeline_shader_stage_create_info.pName = shader->get_config().entry_point;
+  pipeline_shader_stage_create_info.pName = shader->config.entry_point;
   pipeline_shader_stage_create_info.pSpecializationInfo = nullptr;
   return 0;
 }

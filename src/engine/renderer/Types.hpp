@@ -117,7 +117,7 @@ namespace me {
   enum FrameFlags {
     FRAME_SWAPCHAIN_REFRESH_FLAG
   };
-  
+ 
   
   typedef void* PhysicalDevice;
   typedef void* Surface;
@@ -138,31 +138,40 @@ namespace me {
   typedef uint32_t FramePrepared;
   typedef uint32_t FrameRendered;
   typedef uint32_t FramePresented;
- 
 
-  struct ViewportInfo {
+
+  struct PhysicalDeviceProperties {
+    PhysicalDeviceType device_type;
+    uint32_t device_id;
+    char device_name[256];
+    uint32_t vendor_id;
+    uint32_t driver_version;
+    uint32_t api_version;
+  };
+
+  struct Viewport {
     math::vec2f location;
     math::vec2f size;
   };
   
-  struct ScissorInfo {
+  struct Scissor {
     math::vec2i offset;
     math::vec2u size;
   };
   
-  struct ShaderBindingInfo {
+  struct ShaderBinding {
     uint32_t binding;
     uint32_t stride;
   };
   
-  struct ShaderAttributeInfo {
+  struct ShaderAttribute {
     const char* name;
     uint32_t binding;
     uint32_t location;
     uint32_t offset;
     Format format;
   };
-  
+
   
   struct EngineInitInfo {
     const EngineInfo* engine_info;
@@ -254,9 +263,9 @@ namespace me {
     StructureType type;
     void* next;
     uint32_t vertex_binding_count;
-    ShaderBindingInfo* vertex_bindings;
+    ShaderBinding* vertex_bindings;
     uint32_t vertex_attribute_count;
-    ShaderAttributeInfo* vertex_attributes;
+    ShaderAttribute* vertex_attributes;
     uint32_t shader_count;
     Shader** shaders;
     Topology topology;
@@ -268,9 +277,9 @@ namespace me {
     Device device;
     RenderPass render_pass;
     uint32_t viewport_count;
-    ViewportInfo* viewports;
+    Viewport* viewports;
     uint32_t scissor_count;
-    ScissorInfo* scissors;
+    Scissor* scissors;
     RasterizerCreateInfo* rasterizer_create_info;
     MultisamplingCreateInfo* multisampling_create_info;
     ShaderCreateInfo* shader_create_info;
@@ -322,14 +331,33 @@ namespace me {
     CommandPool command_pool;
     CommandBufferUsage usage;
   };
-
+  
   struct BufferWriteInfo {
     PhysicalDevice physical_device;
     Device device;
-    Queue queue; /* required if write_method is 'WRITE_METHOD_STAGING' */
-    CommandPool command_pool; /* required if write_method is 'WRITE_METHOD_STAGING' */
+    Queue transfer_queue; /* required if write_method is 'WRITE_METHOD_STAGING' */
+    CommandPool transfer_command_pool; /* required if write_method is 'WRITE_METHOD_STAGING' */
     size_t byte_count;
     void* bytes;
+  };
+  
+  struct CmdBeginRenderPassInfo {
+    Swapchain swapchain;
+    RenderPass render_pass;
+    Framebuffer framebuffer;
+    float clear_values[4];
+  };
+  
+  struct CmdBindDescriptorsInfo {
+    Pipeline pipeline;
+    uint32_t descriptor_count;
+    Descriptor* descriptors;
+  };
+  
+  struct CmdDrawMeshesInfo {
+    Pipeline pipeline;
+    uint32_t mesh_count;
+    class Mesh** meshes;
   };
 
   struct FramePrepareInfo {
@@ -361,89 +389,12 @@ namespace me {
     uint32_t swapchain_count;
     Swapchain* swapchains;
   };
-  
-  
-  struct DeviceCleanupInfo {
-  };
-  
-  struct SurfaceCleanupInfo {
-    PhysicalDevice physical_device;
-  };
-  
-  struct SwapchainCleanupInfo {
-    Device device;
-  };
-
-  struct SwapchainImageCleanupInfo {
-    Device device;
-  };
-
-  struct FrameCleanupInfo {
-    Device device;
-  };
-  
-  struct RenderPassCleanupInfo {
-    Device device;
-  };
-  
-  struct PipelineCleanupInfo {
-    Device device;
-  };
-  
-  struct FramebufferCleanupInfo {
-    Device device;
-  };
-  
-  struct BufferCleanupInfo {
-    Device device;
-  };
-  
-  struct DescriptorPoolCleanupInfo {
-    Device device;
-  };
-  
-  struct DescriptorCleanupInfo {
-    Device device;
-    DescriptorPool descriptor_pool;
-  };
-  
-  struct CommandPoolCleanupInfo {
-    Device device;
-  };
-  
-  struct CommandBufferCleanupInfo {
-    Device device;
-    CommandPool command_pool;
-  };
-  
-  
-  struct CommandInfo {
-  };
-  
-  struct CmdBeginRenderPassInfo {
-    Swapchain swapchain;
-    RenderPass render_pass;
-    Framebuffer framebuffer;
-    float clear_values[4];
-  };
-  
-  struct CmdBindDescriptorsInfo {
-    Pipeline pipeline;
-    uint32_t descriptor_count;
-    Descriptor* descriptors;
-  };
-  
-  struct CmdDrawMeshesInfo {
-    Pipeline pipeline;
-    uint32_t mesh_count;
-    class Mesh** meshes;
-  };
 
   struct SetupMeshInfo {
     PhysicalDevice physical_device;
     Device device;
     Queue transfer_queue;
-    CommandPool transfer_pool;
+    CommandPool transfer_command_pool;
   };
 
 

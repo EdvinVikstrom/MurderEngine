@@ -4,3 +4,6 @@
 [submodule "extern/glfw"]
 	path = extern/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "extern/vulkan"]
+	path = extern/vulkan
+	url = git@github.com:KhronosGroup/Vulkan-Headers.git

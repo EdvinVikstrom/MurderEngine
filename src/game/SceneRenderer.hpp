@@ -19,7 +19,7 @@ protected:
     me::math::mat4f view;
     me::math::mat4f model;
     me::math::mat4f projection;
-  };
+  } uniform_buffer_object;
 
   me::PhysicalDevice physical_device;
   me::Surface surface;

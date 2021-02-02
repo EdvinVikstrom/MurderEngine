@@ -3,4 +3,10 @@ sources += [
   "$(DIR)/Logger.cpp"
 ]
 
-source: "$(DIR)/renderer/MIConfig" "$(DIR)/surface/MIConfig" "$(DIR)/memory/MIConfig" "$(DIR)/scene/MIConfig" "$(DIR)/audio/MIConfig" "$(DIR)/format/MIConfig"
+source: "$(DIR)/renderer/MIConfig"
+source: "$(DIR)/surface/MIConfig"
+source: "$(DIR)/memory/MIConfig"
+source: "$(DIR)/format/MIConfig"
+source: "$(DIR)/scene/MIConfig"
+source: "$(DIR)/audio/MIConfig"
+source: "$(DIR)/tools/MIConfig"

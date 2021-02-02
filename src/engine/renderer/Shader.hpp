@@ -5,71 +5,33 @@
 
 namespace me {
 
-  enum ShaderType : uint8_t {
-    SHADER_VERTEX,
-    SHADER_FRAGMENT,
-    SHADER_GEOMETRY
+  enum ShaderType {
+    SHADER_TYPE_VERTEX,
+    SHADER_TYPE_FRAGMENT,
+    SHADER_TYPE_GEOMETRY
   };
 
+
+  struct ShaderData {
+    size_t size;
+    const char* code;
+  };
+
+  struct ShaderConfig {
+    const char* entry_point;
+  };
 
   class Shader {
 
   public:
 
-    struct Config {
-      const char* entry_point;
-    };
-
-  public:
-
-    typedef size_t Link;
-
-  protected:
-
     const ShaderType type;
-    const size_t length;
-    const char* data;
+    const ShaderData data;
+    const ShaderConfig config;
 
-    mutable Config config;
-    mutable Link link;
-
-  public:
-
-    Shader(const string &source, const ShaderType type, const size_t length, const char* data, Config config, Link link = -1)
-      : type(type), length(length), data(data)
+    Shader(ShaderType type, const ShaderData &data, const ShaderConfig &config)
+      : type(type), data(data), config(config)
     {
-      this->config = config;
-      this->link = link;
-    }
-
-    const ShaderType get_type() const
-    {
-      return type;
-    }
-
-    const size_t get_length() const
-    {
-      return length;
-    }
-
-    const char* get_data() const
-    {
-      return data;
-    }
-
-    Config& get_config() const
-    {
-      return config;
-    }
-
-    Link get_link() const
-    {
-      return link;
-    }
-
-    void set_link(Link link) const
-    {
-      this->link = link;
     }
 
   };

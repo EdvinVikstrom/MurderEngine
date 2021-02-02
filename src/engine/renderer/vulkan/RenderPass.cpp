@@ -5,8 +5,8 @@ int me::Vulkan::create_render_pass(const RenderPassCreateInfo &render_pass_creat
 {
   VERIFY_CREATE_INFO(render_pass_create_info, STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
 
-  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(render_pass_create_info.device)->vk_device;
-  VulkanSwapchain* swapchain = reinterpret_cast<VulkanSwapchain*>(render_pass_create_info.swapchain);
+  VkDevice vk_device = reinterpret_cast<Device_T*>(render_pass_create_info.device)->vk_device;
+  VkFormat vk_image_format = reinterpret_cast<Swapchain_T*>(render_pass_create_info.swapchain)->vk_image_format;
   
   uint32_t subpass_dependency_count = 1;
   VkSubpassDependency subpass_dependencies[subpass_dependency_count];
@@ -21,7 +21,7 @@ int me::Vulkan::create_render_pass(const RenderPassCreateInfo &render_pass_creat
   uint32_t color_attachment_description_count = 1;
   VkAttachmentDescription color_attachment_descriptions[color_attachment_description_count];
   color_attachment_descriptions[0].flags = 0;
-  color_attachment_descriptions[0].format = swapchain->vk_image_format;
+  color_attachment_descriptions[0].format = vk_image_format;
   color_attachment_descriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
   color_attachment_descriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   color_attachment_descriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -64,15 +64,15 @@ int me::Vulkan::create_render_pass(const RenderPassCreateInfo &render_pass_creat
   if (result != VK_SUCCESS)
     throw exception("failed to create render pass [%s]", util::get_result_string(result));
 
-  render_pass = alloc.allocate<VulkanRenderPass>(vk_render_pass);
+  render_pass = alloc.allocate<RenderPass_T>(vk_render_pass);
   return 0;
 }
 
-int me::Vulkan::cleanup_render_pass(const RenderPassCleanupInfo &render_pass_cleanup_info, RenderPass render_pass_ptr)
+int me::Vulkan::cleanup_render_pass(Device device, RenderPass render_pass)
 {
-  VkDevice vk_device = reinterpret_cast<VulkanDevice*>(render_pass_cleanup_info.device)->vk_device;
-  VulkanRenderPass* render_pass = reinterpret_cast<VulkanRenderPass*>(render_pass_ptr);
+  VkDevice vk_device = reinterpret_cast<Device_T*>(device)->vk_device;
+  VkRenderPass vk_render_pass = reinterpret_cast<RenderPass_T*>(render_pass)->vk_render_pass;
 
-  vkDestroyRenderPass(vk_device, render_pass->vk_render_pass, vk_allocation);
+  vkDestroyRenderPass(vk_device, vk_render_pass, vk_allocation);
   return 0;
 }

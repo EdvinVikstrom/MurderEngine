@@ -4,7 +4,7 @@
 
 bool me::util::has_required_extensions(
     const array_proxy<VkExtensionProperties> 		&extensions,
-    const array_proxy<const char*, uint32_t> 		&required_extensions
+    const array_proxy<const char*> 			&required_extensions
     )
 {
   for (const char* required_extension : required_extensions)
@@ -27,7 +27,7 @@ bool me::util::has_required_extensions(
 
 bool me::util::has_required_layers(
     const array_proxy<VkLayerProperties>		&layers,
-    const array_proxy<const char*, uint32_t>		&required_layers
+    const array_proxy<const char*>			&required_layers
     )
 {
   for (const char* required_layer : required_layers)
@@ -98,6 +98,48 @@ const char* me::util::get_result_string(
 }
 
 #undef ENUMSTR
+
+VkPhysicalDeviceType me::util::get_vulkan_physical_device_type(
+    PhysicalDeviceType physical_device_type
+    )
+{
+  switch (physical_device_type)
+  {
+    case PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+      return VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+    case PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+      return VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+    case PHYSICAL_DEVICE_TYPE_CPU:
+      return VK_PHYSICAL_DEVICE_TYPE_CPU;
+    case PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+      return VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
+    case PHYSICAL_DEVICE_TYPE_OTHER:
+      return VK_PHYSICAL_DEVICE_TYPE_OTHER;
+    default:
+      return VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM;
+  }
+}
+
+me::PhysicalDeviceType me::util::get_physical_device_type(
+    VkPhysicalDeviceType vk_physical_device_type
+    )
+{
+  switch (vk_physical_device_type)
+  {
+    case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+      return PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+    case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+      return PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+    case VK_PHYSICAL_DEVICE_TYPE_CPU:
+      return PHYSICAL_DEVICE_TYPE_CPU;
+    case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+      return PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
+    case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+      return PHYSICAL_DEVICE_TYPE_OTHER;
+    default:
+      return PHYSICAL_DEVICE_TYPE_NONE;
+  }
+}
 
 VkFormat me::util::get_vulkan_format(
     Format format
